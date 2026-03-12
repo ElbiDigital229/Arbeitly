@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Briefcase, FileText, TrendingUp, Clock, MoreHorizontal, Plus, GripVertical, User } from "lucide-react";
@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import AddJobDialog from "@/components/dialogs/AddJobDialog";
 import { useToast } from "@/hooks/use-toast";
+import { useApplications } from "@/context/ApplicationsContext";
+import type { Application, ApplicationStatus } from "@/data/applications";
+import { useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -21,24 +24,9 @@ import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-
 import { CSS } from "@dnd-kit/utilities";
 import { useDroppable } from "@dnd-kit/core";
 
-type ApplicationCard = {
-  id: string;
-  job: string;
-  company: string;
-  date: string;
-  cvVersion: string;
-  candidate: string;
-};
+type ColumnDef = { id: ApplicationStatus; title: string; color: string };
 
-type ColumnId = "to-apply" | "applied" | "interview" | "offer" | "rejected";
-
-type Column = {
-  id: ColumnId;
-  title: string;
-  color: string;
-};
-
-const columnDefs: Column[] = [
+const columnDefs: ColumnDef[] = [
   { id: "to-apply", title: "To Apply", color: "bg-muted-foreground" },
   { id: "applied", title: "Applied", color: "bg-info" },
   { id: "interview", title: "Interview", color: "bg-warning" },
@@ -46,41 +34,14 @@ const columnDefs: Column[] = [
   { id: "rejected", title: "Rejected", color: "bg-destructive" },
 ];
 
-const candidates = [
-  "Anna Schmidt",
-  "Thomas Wagner",
-  "Lisa Müller",
-  "Peter Fischer",
-  "Maria Becker",
+const candidateNames = [
+  "Anna Schmidt", "Thomas Wagner", "Lisa Müller",
+  "Peter Fischer", "Maria Becker", "Hans Schulz",
 ];
 
-const initialCards: Record<ColumnId, ApplicationCard[]> = {
-  "to-apply": [
-    { id: "1", job: "DevOps Engineer", company: "Bosch", date: "Mar 8", cvVersion: "v3", candidate: "Anna Schmidt" },
-    { id: "2", job: "Cloud Architect", company: "SAP SE", date: "Mar 7", cvVersion: "v3", candidate: "Thomas Wagner" },
-    { id: "3", job: "Data Engineer", company: "Zalando", date: "Mar 7", cvVersion: "v2", candidate: "Lisa Müller" },
-  ],
-  applied: [
-    { id: "4", job: "Senior Frontend Dev", company: "SAP SE", date: "Mar 6", cvVersion: "v3", candidate: "Anna Schmidt" },
-    { id: "5", job: "React Developer", company: "Siemens", date: "Mar 1", cvVersion: "v2", candidate: "Peter Fischer" },
-    { id: "6", job: "Backend Engineer", company: "Deutsche Bank", date: "Feb 20", cvVersion: "v3", candidate: "Thomas Wagner" },
-    { id: "7", job: "Platform Engineer", company: "BMW Group", date: "Feb 18", cvVersion: "v2", candidate: "Maria Becker" },
-  ],
-  interview: [
-    { id: "8", job: "Full Stack Engineer", company: "BMW Group", date: "Mar 4", cvVersion: "v3", candidate: "Anna Schmidt" },
-    { id: "9", job: "Tech Lead", company: "Infineon", date: "Feb 25", cvVersion: "v3", candidate: "Lisa Müller" },
-  ],
-  offer: [
-    { id: "10", job: "Tech Lead", company: "Bosch", date: "Feb 25", cvVersion: "v1", candidate: "Peter Fischer" },
-  ],
-  rejected: [
-    { id: "11", job: "Software Architect", company: "Allianz", date: "Feb 28", cvVersion: "v2", candidate: "Thomas Wagner" },
-    { id: "12", job: "SRE Engineer", company: "Delivery Hero", date: "Feb 15", cvVersion: "v1", candidate: "Maria Becker" },
-  ],
-};
+// ─── Sortable card ────────────────────────────────────────────────────────────
 
-// Sortable card
-function SortableCard({ card }: { card: ApplicationCard }) {
+function SortableCard({ card }: { card: Application }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id });
 
   const style = {
@@ -94,15 +55,18 @@ function SortableCard({ card }: { card: ApplicationCard }) {
       <Card className="cursor-grab active:cursor-grabbing hover:border-primary/40 transition-colors bg-card border-border">
         <CardContent className="p-3">
           <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <p className="text-sm font-medium text-card-foreground leading-snug">{card.job}</p>
-              <p className="text-xs text-muted-foreground mt-1">{card.company}</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-card-foreground leading-snug truncate">{card.job}</p>
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">{card.company}</p>
             </div>
-            <div {...listeners} className="ml-2 mt-0.5 text-muted-foreground hover:text-foreground">
+            <div {...listeners} className="ml-2 mt-0.5 text-muted-foreground hover:text-foreground shrink-0">
               <GripVertical className="h-3.5 w-3.5" />
             </div>
           </div>
-          <div className="flex items-center justify-between mt-3">
+          {card.salaryExpectation && (
+            <p className="text-[10px] text-primary/70 mt-1 font-medium">{card.salaryExpectation}</p>
+          )}
+          <div className="flex items-center justify-between mt-2.5">
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">{card.cvVersion}</Badge>
               <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
@@ -121,8 +85,7 @@ function SortableCard({ card }: { card: ApplicationCard }) {
   );
 }
 
-// Card overlay (shown while dragging)
-function CardOverlay({ card }: { card: ApplicationCard }) {
+function CardOverlay({ card }: { card: Application }) {
   return (
     <Card className="cursor-grabbing shadow-xl border-primary/50 bg-card w-[264px]">
       <CardContent className="p-3">
@@ -133,8 +96,13 @@ function CardOverlay({ card }: { card: ApplicationCard }) {
   );
 }
 
-// Droppable column
-function DroppableColumn({ column, cards }: { column: Column; cards: ApplicationCard[] }) {
+// ─── Droppable column ─────────────────────────────────────────────────────────
+
+function DroppableColumn({
+  column, cards, onAddClick,
+}: {
+  column: ColumnDef; cards: Application[]; onAddClick: () => void;
+}) {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
   const cardIds = cards.map((c) => c.id);
 
@@ -163,124 +131,81 @@ function DroppableColumn({ column, cards }: { column: Column; cards: Application
           ))}
         </SortableContext>
 
-        <button className="w-full flex items-center gap-1 px-3 py-2 rounded-lg text-xs text-muted-foreground hover:bg-secondary transition-colors">
-          <Plus className="h-3 w-3" />
-          Add application
+        <button
+          onClick={onAddClick}
+          className="w-full flex items-center gap-1 px-3 py-2 rounded-lg text-xs text-muted-foreground hover:bg-secondary transition-colors"
+        >
+          <Plus className="h-3 w-3" /> Add application
         </button>
       </div>
     </div>
   );
 }
 
+// ─── BoardView ────────────────────────────────────────────────────────────────
+
 const BoardView = () => {
-  const [columns, setColumns] = useState(initialCards);
+  const { applications, addApplication, moveCard } = useApplications();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [selectedCandidate, setSelectedCandidate] = useState<string>("all");
+  const [quickAddStatus, setQuickAddStatus] = useState<ApplicationStatus>("to-apply");
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
   const { toast } = useToast();
-  const [nextId, setNextId] = useState(13);
 
-  const handleAddJob = (job: { job: string; company: string; candidate: string; cvVersion: string }) => {
-    const newCard: ApplicationCard = {
-      id: String(nextId),
-      job: job.job,
-      company: job.company,
-      date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-      cvVersion: job.cvVersion,
-      candidate: job.candidate,
-    };
-    setNextId((prev) => prev + 1);
-    setColumns((prev) => ({ ...prev, "to-apply": [newCard, ...prev["to-apply"]] }));
-    toast({ title: "Job Added", description: `${job.job} at ${job.company} added to board` });
+  const handleAddJob = (app: Omit<Application, "id" | "date">) => {
+    addApplication(app);
+    toast({ title: "Application Added", description: `${app.job} at ${app.company}` });
   };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
-  // Find which column a card is in
-  const findColumn = (cardId: string): ColumnId | null => {
-    for (const [colId, cards] of Object.entries(columns)) {
-      if (cards.some((c) => c.id === cardId)) return colId as ColumnId;
+  const byStatus = useMemo(() => {
+    const map: Record<ApplicationStatus, Application[]> = {
+      "to-apply": [], applied: [], interview: [], offer: [], rejected: [],
+    };
+    for (const app of applications) {
+      if (selectedCandidate === "all" || app.candidate === selectedCandidate) {
+        map[app.status].push(app);
+      }
     }
-    return null;
+    return map;
+  }, [applications, selectedCandidate]);
+
+  const totalApps = Object.values(byStatus).reduce((s, arr) => s + arr.length, 0);
+  const interviewCount = byStatus.interview.length + byStatus.offer.length;
+  const interviewRate = totalApps > 0 ? Math.round((interviewCount / totalApps) * 100) : 0;
+
+  const findStatus = (cardId: string): ApplicationStatus | null => {
+    const app = applications.find((a) => a.id === cardId);
+    return app ? app.status : null;
   };
 
-  const activeCard = useMemo(() => {
-    if (!activeId) return null;
-    for (const cards of Object.values(columns)) {
-      const found = cards.find((c) => c.id === activeId);
-      if (found) return found;
-    }
-    return null;
-  }, [activeId, columns]);
+  const activeCard = useMemo(
+    () => applications.find((a) => a.id === activeId) ?? null,
+    [activeId, applications]
+  );
 
-  // Filtered columns based on candidate selection
-  const filteredColumns = useMemo(() => {
-    if (selectedCandidate === "all") return columns;
-    const filtered: Record<ColumnId, ApplicationCard[]> = {} as any;
-    for (const [colId, cards] of Object.entries(columns)) {
-      filtered[colId as ColumnId] = cards.filter((c) => c.candidate === selectedCandidate);
-    }
-    return filtered;
-  }, [columns, selectedCandidate]);
-
-  const totalApps = Object.values(filteredColumns).reduce((sum, cards) => sum + cards.length, 0);
-
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
-  };
+  const handleDragStart = (event: DragStartEvent) => setActiveId(event.active.id as string);
 
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
     if (!over) return;
-
-    const activeCol = findColumn(active.id as string);
-    // over could be a column id or a card id
-    let overCol = columnDefs.find((c) => c.id === over.id)?.id || findColumn(over.id as string);
-
-    if (!activeCol || !overCol || activeCol === overCol) return;
-
-    setColumns((prev) => {
-      const activeCards = [...prev[activeCol]];
-      const overCards = [...prev[overCol as ColumnId]];
-      const activeIndex = activeCards.findIndex((c) => c.id === active.id);
-      const [movedCard] = activeCards.splice(activeIndex, 1);
-
-      // Find insert position
-      const overIndex = overCards.findIndex((c) => c.id === over.id);
-      if (overIndex >= 0) {
-        overCards.splice(overIndex, 0, movedCard);
-      } else {
-        overCards.push(movedCard);
-      }
-
-      return { ...prev, [activeCol]: activeCards, [overCol as ColumnId]: overCards };
-    });
+    const activeStatus = findStatus(active.id as string);
+    const overStatus = (columnDefs.find((c) => c.id === over.id)?.id ?? findStatus(over.id as string)) as ApplicationStatus | null;
+    if (!activeStatus || !overStatus || activeStatus === overStatus) return;
+    moveCard(active.id as string, overStatus, over.id as string);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
     if (!over) return;
-
-    const activeCol = findColumn(active.id as string);
-    const overCol = columnDefs.find((c) => c.id === over.id)?.id || findColumn(over.id as string);
-
-    if (!activeCol || !overCol) return;
-
-    if (activeCol === overCol) {
-      // Reorder within same column
-      setColumns((prev) => {
-        const cards = [...prev[activeCol]];
-        const oldIndex = cards.findIndex((c) => c.id === active.id);
-        const newIndex = cards.findIndex((c) => c.id === over.id);
-        if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-          const [item] = cards.splice(oldIndex, 1);
-          cards.splice(newIndex, 0, item);
-        }
-        return { ...prev, [activeCol]: cards };
-      });
-    }
+    const activeStatus = findStatus(active.id as string);
+    const overStatus = (columnDefs.find((c) => c.id === over.id)?.id ?? findStatus(over.id as string)) as ApplicationStatus | null;
+    if (!activeStatus || !overStatus || activeStatus !== overStatus) return;
+    moveCard(active.id as string, overStatus, over.id as string);
   };
 
   return (
@@ -297,7 +222,7 @@ const BoardView = () => {
               <FileText className="h-3 w-3 mr-1" /> 8 Documents
             </Badge>
             <Badge variant="secondary" className="text-xs font-normal">
-              <TrendingUp className="h-3 w-3 mr-1" /> 33% Interview Rate
+              <TrendingUp className="h-3 w-3 mr-1" /> {interviewRate}% Interview Rate
             </Badge>
           </div>
         </div>
@@ -309,12 +234,12 @@ const BoardView = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Candidates</SelectItem>
-              {candidates.map((c) => (
+              {candidateNames.map((c) => (
                 <SelectItem key={c} value={c}>{c}</SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <AddJobDialog onAdd={handleAddJob} candidates={candidates} />
+          <AddJobDialog onAdd={handleAddJob} candidates={candidateNames} />
         </div>
       </div>
 
@@ -329,15 +254,30 @@ const BoardView = () => {
         <div className="flex-1 overflow-x-auto p-4">
           <div className="flex gap-3 h-full min-w-max">
             {columnDefs.map((col) => (
-              <DroppableColumn key={col.id} column={col} cards={filteredColumns[col.id]} />
+              <DroppableColumn
+                key={col.id}
+                column={col}
+                cards={byStatus[col.id]}
+                onAddClick={() => { setQuickAddStatus(col.id); setQuickAddOpen(true); }}
+              />
             ))}
           </div>
         </div>
-
         <DragOverlay>
           {activeCard ? <CardOverlay card={activeCard} /> : null}
         </DragOverlay>
       </DndContext>
+
+      {/* Quick-add dialog opened from column "+ Add application" */}
+      <AddJobDialog
+        key={quickAddStatus}
+        open={quickAddOpen}
+        onOpenChange={setQuickAddOpen}
+        onAdd={handleAddJob}
+        candidates={candidateNames}
+        defaultStatus={quickAddStatus}
+        trigger={<span className="hidden" />}
+      />
     </div>
   );
 };

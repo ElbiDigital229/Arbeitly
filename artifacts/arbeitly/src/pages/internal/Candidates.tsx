@@ -8,11 +8,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea";
 import RichTextEditor from "@/components/editor/RichTextEditor";
 import PdfExportDialog from "@/components/editor/PdfExportDialog";
+import AddJobDialog from "@/components/dialogs/AddJobDialog";
+import { useApplications } from "@/context/ApplicationsContext";
+import { statusLabels, statusColors as appStatusColors } from "@/data/applications";
+import type { Application } from "@/data/applications";
 import {
   Search, User, Mail, Phone, Linkedin, MapPin, Calendar, Briefcase,
   GraduationCap, Target, FileText, Download, CheckCircle, AlertCircle,
   Globe, Star, Award, ChevronRight, Sparkles, Clock, Copy, Check,
-  Wand2, Loader2, Save,
+  Wand2, Loader2, Save, ExternalLink, Image, Plus,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -964,17 +968,103 @@ const candidates: Candidate[] = [
   },
 ];
 
+// ─── ApplicationCard ──────────────────────────────────────────────────────────
+
+const ApplicationCard = ({ app }: { app: Application }) => (
+  <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
+    {/* Header row */}
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="text-sm font-semibold text-foreground">{app.job}</p>
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${appStatusColors[app.status]}`}>
+            {statusLabels[app.status]}
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground mt-0.5">{app.company}</p>
+      </div>
+      {app.jobUrl && (
+        <a
+          href={app.jobUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="shrink-0 flex items-center gap-1 text-[10px] text-primary hover:underline mt-0.5"
+        >
+          <ExternalLink className="h-3 w-3" /> View Job
+        </a>
+      )}
+    </div>
+
+    {/* Meta grid */}
+    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+      {app.cvVersion && (
+        <div className="flex items-center gap-1.5 text-muted-foreground">
+          <FileText className="h-3 w-3 shrink-0" />
+          <span className="truncate">CV: <span className="text-foreground font-medium">{app.cvVersion}</span></span>
+        </div>
+      )}
+      {app.salaryExpectation && (
+        <div className="flex items-center gap-1.5 text-muted-foreground">
+          <Star className="h-3 w-3 shrink-0" />
+          <span className="truncate">Salary: <span className="text-foreground font-medium">{app.salaryExpectation}</span></span>
+        </div>
+      )}
+      {app.datePosted && (
+        <div className="flex items-center gap-1.5 text-muted-foreground">
+          <Calendar className="h-3 w-3 shrink-0" />
+          <span className="truncate">Posted: <span className="text-foreground font-medium">{app.datePosted}</span></span>
+        </div>
+      )}
+      {app.dateSubmitted && (
+        <div className="flex items-center gap-1.5 text-muted-foreground">
+          <CheckCircle className="h-3 w-3 shrink-0" />
+          <span className="truncate">Submitted: <span className="text-foreground font-medium">{app.dateSubmitted}</span></span>
+        </div>
+      )}
+    </div>
+
+    {/* Notes */}
+    {app.notes && (
+      <p className="text-xs text-muted-foreground bg-secondary/50 rounded-lg px-3 py-2 leading-relaxed">
+        {app.notes}
+      </p>
+    )}
+
+    {/* JD Screenshot */}
+    {app.jdScreenshot && (
+      <div className="flex items-center gap-2 pt-1">
+        <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+          <Image className="h-4 w-4 text-primary" />
+        </div>
+        <div>
+          <p className="text-[10px] font-medium text-foreground">JD Screenshot attached</p>
+          <p className="text-[10px] text-muted-foreground">Job description image uploaded</p>
+        </div>
+        <img
+          src={app.jdScreenshot}
+          alt="JD Screenshot"
+          className="ml-auto h-10 w-16 object-cover rounded-lg border border-border"
+        />
+      </div>
+    )}
+  </div>
+);
+
 // ─── Main component ────────────────────────────────────────────────────────────
 
 const Candidates = () => {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Candidate>(candidates[0]);
+  const { applications, addApplication } = useApplications();
 
   const filtered = candidates.filter(
     (c) =>
       c.name.toLowerCase().includes(search.toLowerCase()) ||
       c.email.toLowerCase().includes(search.toLowerCase())
   );
+
+  const candidateApplications = applications.filter((a) => a.candidate === selected.name);
+  const allCandidateNames = candidates.map((c) => c.name);
 
   const usedPct = selected.applicationsTotal > 0
     ? Math.round((selected.applicationsUsed / selected.applicationsTotal) * 100)
@@ -1076,6 +1166,14 @@ const Candidates = () => {
             <div className="px-6 pt-3 border-b border-border shrink-0 bg-card">
               <TabsList className="h-8">
                 <TabsTrigger value="profile" className="gap-1.5 text-xs h-7"><User className="h-3.5 w-3.5" />Profile</TabsTrigger>
+                <TabsTrigger value="applications" className="gap-1.5 text-xs h-7">
+                  <Briefcase className="h-3.5 w-3.5" />Applications
+                  {candidateApplications.length > 0 && (
+                    <span className="ml-0.5 bg-primary/20 text-primary text-[10px] font-bold rounded-full px-1.5 py-0 leading-4">
+                      {candidateApplications.length}
+                    </span>
+                  )}
+                </TabsTrigger>
                 <TabsTrigger value="onboarding" className="gap-1.5 text-xs h-7"><Target className="h-3.5 w-3.5" />Onboarding</TabsTrigger>
                 <TabsTrigger value="cv" className="gap-1.5 text-xs h-7"><FileText className="h-3.5 w-3.5" />CV</TabsTrigger>
                 <TabsTrigger value="cover-letter" className="gap-1.5 text-xs h-7"><Sparkles className="h-3.5 w-3.5" />Cover Letter</TabsTrigger>
@@ -1204,6 +1302,48 @@ const Candidates = () => {
                   </div>
                 ))}
               </div>
+            </TabsContent>
+
+            {/* ── Applications ── */}
+            <TabsContent value="applications" className="flex-1 overflow-y-auto p-6 mt-0">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground">
+                    Job Applications
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {candidateApplications.length === 0
+                      ? "No applications yet"
+                      : `${candidateApplications.length} application${candidateApplications.length > 1 ? "s" : ""} tracked`}
+                  </p>
+                </div>
+                <AddJobDialog
+                  onAdd={(app) => addApplication({ ...app, candidate: selected.name })}
+                  candidates={allCandidateNames}
+                  defaultCandidate={selected.name}
+                  trigger={
+                    <Button size="sm" className="gap-1.5 rounded-full h-8 text-xs">
+                      <Plus className="h-3.5 w-3.5" /> Add Application
+                    </Button>
+                  }
+                />
+              </div>
+
+              {candidateApplications.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4">
+                    <Briefcase className="h-7 w-7 text-primary/60" />
+                  </div>
+                  <p className="text-sm font-medium text-foreground">No applications yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">Track job applications for {selected.name} using the button above.</p>
+                </div>
+              ) : (
+                <div className="space-y-3 max-w-2xl">
+                  {candidateApplications.map((app) => (
+                    <ApplicationCard key={app.id} app={app} />
+                  ))}
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </motion.div>
