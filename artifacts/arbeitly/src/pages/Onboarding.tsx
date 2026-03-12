@@ -67,7 +67,7 @@ const Onboarding = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate("/");
+    navigate("/customer");
   };
 
   const currentStep = STEPS[step - 1];

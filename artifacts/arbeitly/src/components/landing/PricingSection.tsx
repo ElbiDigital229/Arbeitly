@@ -1,53 +1,76 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-const plans = [
+export const plans = [
   {
-    name: "Starter",
-    price: "€19",
-    period: "/month",
-    description: "Perfect for getting started",
-    features: [
-      "5 CV optimizations/month",
-      "10 Cover letters/month",
-      "Basic job matching",
-      "Application tracking",
-      "Email support",
-    ],
+    id: "basic",
+    name: "Basic",
+    price: "€299",
+    priceSuffix: "",
+    billing: "one time payment",
+    applications: 200,
     popular: false,
+    features: [
+      { text: "200 Job applications", included: true },
+      { text: "Expert Resume / Cover Letter Review (1,2)", included: true },
+      { text: "Standard Resume*", included: true },
+      { text: "Standard Cover Letters*", included: true },
+      { text: "1 Human Assistant", included: true },
+      { text: "LinkedIn Makeover", included: false },
+    ],
   },
   {
-    name: "Professional",
-    price: "€49",
-    period: "/month",
-    description: "For serious job seekers",
+    id: "standard",
+    name: "Standard",
+    price: "€399",
+    priceSuffix: "",
+    billing: "one time payment",
+    applications: 300,
+    popular: false,
     features: [
-      "Unlimited CV optimizations",
-      "Unlimited cover letters",
-      "Advanced job matching",
-      "Priority application tracking",
-      "Multi-language support",
-      "Analytics dashboard",
-      "Priority support",
+      { text: "300 Job applications", included: true },
+      { text: "Expert Resume / Cover Letter Review (1,2)", included: true },
+      { text: "Standard Resume*", included: true },
+      { text: "Standard Cover Letters*", included: true },
+      { text: "1 Human Assistant", included: true },
+      { text: "LinkedIn Makeover", included: false },
     ],
+  },
+  {
+    id: "premium",
+    name: "Premium",
+    price: "€499",
+    priceSuffix: "",
+    billing: "one time payment",
+    applications: 400,
     popular: true,
+    features: [
+      { text: "400 Job applications", included: true },
+      { text: "Expert Resume / Cover Letter Review (1,2)", included: true },
+      { text: "Standard Resume*", included: true },
+      { text: "Standard Cover Letters*", included: true },
+      { text: "1 Human Assistant", included: true },
+      { text: "LinkedIn Makeover", included: false },
+    ],
   },
   {
-    name: "Enterprise",
-    price: "€99",
-    period: "/month",
-    description: "For teams and agencies",
-    features: [
-      "Everything in Professional",
-      "Team management",
-      "Custom CV templates",
-      "API access",
-      "Dedicated account manager",
-      "Custom integrations",
-    ],
+    id: "ultimate",
+    name: "Ultimate",
+    price: "€499",
+    priceSuffix: "+ 8.5% SUCCESS FEE",
+    billing: "one time payment",
+    applications: 0,
     popular: false,
+    features: [
+      { text: "Tailored Job Applications", included: true },
+      { text: "Expert Resume / Cover Letter Review (2)", included: true },
+      { text: "Custom Resume for every application", included: true },
+      { text: "Custom Cover Letters for every application", included: true },
+      { text: "1 Human Assistant", included: true },
+      { text: "LinkedIn Makeover (2)", included: true },
+    ],
   },
 ];
 
@@ -62,54 +85,75 @@ const PricingSection = () => {
             Simple, Transparent Pricing
           </h2>
           <p className="mt-4 text-muted-foreground text-lg">
-            Start with a free trial. Upgrade when you're ready.
+            One-time payment. No hidden fees. No monthly charges.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <div className="grid md:grid-cols-4 gap-6 max-w-6xl mx-auto">
           {plans.map((plan, index) => (
             <motion.div
-              key={plan.name}
+              key={plan.id}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className={`relative rounded-2xl border p-8 ${
+              className={`relative rounded-2xl border p-6 flex flex-col ${
                 plan.popular
                   ? "border-primary bg-card shadow-xl glow-accent scale-105"
                   : "border-border bg-card"
               }`}
             >
               {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-4 py-1 text-xs font-bold text-primary-foreground">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-4 py-1 text-xs font-bold text-primary-foreground whitespace-nowrap">
                   Most Popular
                 </div>
               )}
-              <h3 className="font-display text-xl font-bold text-card-foreground">{plan.name}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{plan.description}</p>
-              <div className="mt-6 flex items-baseline gap-1">
-                <span className="font-display text-4xl font-bold text-card-foreground">{plan.price}</span>
-                <span className="text-muted-foreground">{plan.period}</span>
+
+              <h3 className="font-display text-lg font-bold text-card-foreground uppercase tracking-wide">
+                {plan.name}
+              </h3>
+
+              <div className="mt-4">
+                <div className="flex items-baseline gap-1 flex-wrap">
+                  <span className="font-display text-4xl font-bold text-card-foreground">
+                    {plan.price}
+                  </span>
+                </div>
+                {plan.priceSuffix && (
+                  <p className="text-xs font-semibold text-primary mt-0.5">{plan.priceSuffix}</p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">{plan.billing}</p>
               </div>
+
               <Button
-                className="mt-6 w-full rounded-full"
+                className="mt-5 w-full rounded-full"
                 variant={plan.popular ? "default" : "outline"}
-                onClick={() =>
-                  navigate(`/register?plan=${plan.name.toLowerCase()}&price=${plan.price}`)
-                }
+                onClick={() => navigate(`/register?plan=${plan.id}`)}
               >
                 Get Started
               </Button>
-              <ul className="mt-8 space-y-3">
+
+              <ul className="mt-6 space-y-2.5 flex-1">
                 {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-center gap-3 text-sm text-muted-foreground">
-                    <Check className="h-4 w-4 text-primary shrink-0" />
-                    {feature}
+                  <li key={feature.text} className="flex items-start gap-2.5 text-sm">
+                    {feature.included ? (
+                      <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                    ) : (
+                      <X className="h-4 w-4 text-muted-foreground/50 shrink-0 mt-0.5" />
+                    )}
+                    <span className={feature.included ? "text-muted-foreground" : "text-muted-foreground/50"}>
+                      {feature.text}
+                    </span>
                   </li>
                 ))}
               </ul>
             </motion.div>
           ))}
+        </div>
+
+        <div className="mt-10 text-center max-w-xl mx-auto text-xs text-muted-foreground space-y-1">
+          <p>1. Expert Resume / Cover Letter Review can be excluded</p>
+          <p>2. Pro-rata refunds are NOT applicable on Resume Review and LinkedIn Makeover as they are a one-time effort from Experts.</p>
         </div>
       </div>
     </section>

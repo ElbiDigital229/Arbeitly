@@ -7,33 +7,37 @@ import { Label } from "@/components/ui/label";
 import { Check } from "lucide-react";
 import logo from "@/assets/logo.png";
 
-const planDetails: Record<string, { features: string[]; price: string }> = {
-  starter: {
-    price: "€19/month",
-    features: ["5 CV optimizations/month", "10 Cover letters/month", "Basic job matching", "Application tracking"],
+const planDetails: Record<string, { displayPrice: string; features: string[] }> = {
+  basic: {
+    displayPrice: "€299 one-time",
+    features: ["200 Job applications", "Expert CV/CL Review", "Standard Resume", "Standard Cover Letters", "1 Human Assistant"],
   },
-  professional: {
-    price: "€49/month",
-    features: ["Unlimited CV optimizations", "Unlimited cover letters", "Advanced job matching", "Analytics dashboard"],
+  standard: {
+    displayPrice: "€399 one-time",
+    features: ["300 Job applications", "Expert CV/CL Review", "Standard Resume", "Standard Cover Letters", "1 Human Assistant"],
   },
-  enterprise: {
-    price: "€99/month",
-    features: ["Everything in Professional", "Team management", "API access", "Dedicated account manager"],
+  premium: {
+    displayPrice: "€499 one-time",
+    features: ["400 Job applications", "Expert CV/CL Review", "Standard Resume", "Standard Cover Letters", "1 Human Assistant"],
+  },
+  ultimate: {
+    displayPrice: "€499 + 8.5% success fee",
+    features: ["Tailored Job Applications", "Expert CV/CL Review (2)", "Custom Resume per application", "Custom Cover Letters", "1 Human Assistant", "LinkedIn Makeover (2)"],
   },
 };
 
 const Register = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const planParam = searchParams.get("plan") || "professional";
-  const plan = planDetails[planParam] ?? planDetails.professional;
+  const planParam = searchParams.get("plan") || "premium";
+  const plan = planDetails[planParam] ?? planDetails.premium;
   const planName = planParam.charAt(0).toUpperCase() + planParam.slice(1);
 
   const [form, setForm] = useState({ fullName: "", email: "", password: "", confirmPassword: "" });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate(`/payment?plan=${planParam}&price=${encodeURIComponent(plan.price)}`);
+    navigate(`/payment?plan=${planParam}`);
   };
 
   return (
@@ -60,7 +64,7 @@ const Register = () => {
           <div className="mt-8 rounded-2xl border border-border bg-card/60 backdrop-blur p-6">
             <div className="flex items-baseline justify-between mb-4">
               <span className="font-display text-lg font-bold text-card-foreground">{planName}</span>
-              <span className="font-display text-2xl font-bold text-primary">{plan.price}</span>
+              <span className="font-display text-sm font-bold text-primary">{plan.displayPrice}</span>
             </div>
             <ul className="space-y-2">
               {plan.features.map((f) => (
@@ -92,54 +96,25 @@ const Register = () => {
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
             <div>
               <Label htmlFor="fullName">Full Name</Label>
-              <Input
-                id="fullName"
-                placeholder="Max Müller"
-                className="mt-1.5"
-                value={form.fullName}
-                onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-                required
-              />
+              <Input id="fullName" placeholder="Max Müller" className="mt-1.5" value={form.fullName}
+                onChange={(e) => setForm({ ...form, fullName: e.target.value })} required />
             </div>
             <div>
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                className="mt-1.5"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                required
-              />
+              <Input id="email" type="email" placeholder="you@example.com" className="mt-1.5" value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })} required />
             </div>
             <div>
               <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                className="mt-1.5"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                required
-              />
+              <Input id="password" type="password" placeholder="••••••••" className="mt-1.5" value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })} required />
             </div>
             <div>
               <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="••••••••"
-                className="mt-1.5"
-                value={form.confirmPassword}
-                onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
-                required
-              />
+              <Input id="confirmPassword" type="password" placeholder="••••••••" className="mt-1.5" value={form.confirmPassword}
+                onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} required />
             </div>
-            <Button className="w-full rounded-full mt-2" type="submit">
-              Continue to Payment
-            </Button>
+            <Button className="w-full rounded-full mt-2" type="submit">Continue to Payment</Button>
           </form>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
