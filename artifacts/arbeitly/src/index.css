@@ -1,0 +1,93 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Arbeitly brand: rgba(4,50,67) dark + hsl(188,100%,44%) cyan */
+    --background: 196 89% 14%;
+    --foreground: 188 10% 95%;
+
+    --card: 196 80% 18%;
+    --card-foreground: 188 10% 95%;
+
+    --popover: 196 80% 18%;
+    --popover-foreground: 188 10% 95%;
+
+    --primary: 188 100% 44%;
+    --primary-foreground: 196 89% 14%;
+
+    --secondary: 196 60% 22%;
+    --secondary-foreground: 188 10% 90%;
+
+    --muted: 196 50% 20%;
+    --muted-foreground: 196 20% 55%;
+
+    --accent: 188 100% 44%;
+    --accent-foreground: 196 89% 14%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 196 40% 22%;
+    --input: 196 40% 22%;
+    --ring: 188 100% 44%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 196 89% 10%;
+    --sidebar-foreground: 188 10% 85%;
+    --sidebar-primary: 188 100% 44%;
+    --sidebar-primary-foreground: 196 89% 14%;
+    --sidebar-accent: 196 60% 18%;
+    --sidebar-accent-foreground: 188 10% 90%;
+    --sidebar-border: 196 50% 18%;
+    --sidebar-ring: 188 100% 44%;
+
+    /* Custom tokens */
+    --success: 152 60% 42%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 210 50% 8%;
+    --info: 210 80% 52%;
+    --info-foreground: 0 0% 100%;
+
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(188 100% 44%), hsl(188 80% 55%));
+  }
+  .bg-hero {
+    background: linear-gradient(180deg, hsl(196 89% 10%) 0%, hsl(196 89% 14%) 50%, hsl(196 80% 18%) 100%);
+  }
+  .bg-hero-radial {
+    background: radial-gradient(ellipse at 50% 30%, hsl(196 60% 22%) 0%, hsl(196 89% 10%) 70%);
+  }
+  .glass {
+    @apply bg-card/70 backdrop-blur-xl border border-border/50;
+  }
+  .glow-accent {
+    box-shadow: 0 0 40px -10px hsl(188 100% 44% / 0.4);
+  }
+  .bg-section-light {
+    background: hsl(196 80% 18%);
+  }
+}
