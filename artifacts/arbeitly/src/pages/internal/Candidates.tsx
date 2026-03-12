@@ -4,11 +4,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import RichTextEditor from "@/components/editor/RichTextEditor";
 import {
   Search, User, Mail, Phone, Linkedin, MapPin, Calendar, Briefcase,
   GraduationCap, Target, FileText, Download, CheckCircle, AlertCircle,
   Globe, Star, Award, ChevronRight, Sparkles, Clock, Copy, Check,
+  Wand2, Loader2, Save,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -562,18 +565,33 @@ const QA = ({ q, a }: { q: string; a: string }) =>
 
 // Doc editor tab — rich text editor on left, version list on right
 const DocEditorTab = ({
-  versions,
+  versions: initialVersions,
   label,
+  docType,
 }: {
   versions: DocVersion[];
   label: string;
+  docType?: string;
 }) => {
-  const [selectedId, setSelectedId] = useState(versions[0]?.id ?? "v1");
+  const [localVersions, setLocalVersions] = useState<DocVersion[]>(initialVersions);
+  const [selectedId, setSelectedId] = useState(initialVersions[0]?.id ?? "v1");
   const [copied, setCopied] = useState(false);
-  const active = versions.find((v) => v.id === selectedId) ?? versions[0];
   const [editedContent, setEditedContent] = useState<Record<string, string>>({});
 
+  // Enhance dialog state
+  const [enhanceOpen, setEnhanceOpen] = useState(false);
+  const [enhancePrompt, setEnhancePrompt] = useState("");
+  const [enhancing, setEnhancing] = useState(false);
+  const [enhanceError, setEnhanceError] = useState("");
+
+  // Save version dialog state
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [saveName, setSaveName] = useState("");
+
+  const active = localVersions.find((v) => v.id === selectedId) ?? localVersions[0];
   const content = editedContent[selectedId] ?? active.content;
+
+  const today = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 
   const handleCopy = () => {
     const text = content.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
@@ -582,88 +600,242 @@ const DocEditorTab = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleEnhance = async () => {
+    setEnhancing(true);
+    setEnhanceError("");
+    try {
+      const res = await fetch("/api/enhance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content, prompt: enhancePrompt, docType }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(err.error ?? "Request failed");
+      }
+      const { enhancedContent } = await res.json() as { enhancedContent: string };
+      const newId = `ai-${Date.now()}`;
+      const newVersion: DocVersion = {
+        id: newId,
+        label: `Version ${localVersions.length + 1}`,
+        sublabel: enhancePrompt.trim() ? `AI · ${enhancePrompt.trim().slice(0, 40)}` : "AI Enhanced",
+        type: "improved",
+        date: today,
+        content: enhancedContent,
+      };
+      setLocalVersions((prev) => [...prev, newVersion]);
+      setEditedContent((prev) => ({ ...prev, [newId]: enhancedContent }));
+      setSelectedId(newId);
+      setEnhanceOpen(false);
+      setEnhancePrompt("");
+    } catch (err) {
+      setEnhanceError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setEnhancing(false);
+    }
+  };
+
+  const handleSaveVersion = () => {
+    const name = saveName.trim() || `Version ${localVersions.length + 1}`;
+    const newId = `saved-${Date.now()}`;
+    const newVersion: DocVersion = {
+      id: newId,
+      label: name,
+      sublabel: "Manual save",
+      type: "improved",
+      date: today,
+      content,
+    };
+    setLocalVersions((prev) => [...prev, newVersion]);
+    setSelectedId(newId);
+    setSaveOpen(false);
+    setSaveName("");
+  };
+
   return (
-    <div className="flex h-full overflow-hidden">
-      {/* ── Rich Text Editor ── */}
-      <div className="flex-1 flex flex-col min-w-0 border-r border-border overflow-hidden">
-        {/* Header bar above toolbar */}
-        <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card shrink-0">
-          <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full shrink-0 ${active.type === "original" ? "bg-muted-foreground" : "bg-primary"}`} />
-            <span className="text-xs font-semibold text-foreground">{active.label}</span>
-            <span className="text-xs text-muted-foreground">·</span>
-            <span className="text-xs text-muted-foreground">{active.sublabel}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs rounded-full px-3" onClick={handleCopy}>
-              {copied ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3" />}
-              {copied ? "Copied" : "Copy"}
-            </Button>
-            <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs rounded-full px-3">
-              <Download className="h-3 w-3" /> Export PDF
-            </Button>
-          </div>
-        </div>
-
-        {/* Tiptap editor — remounts when version changes so content resets cleanly */}
-        <div className="flex-1 overflow-hidden">
-          <RichTextEditor
-            key={`${selectedId}`}
-            content={content}
-            onChange={(html) =>
-              setEditedContent((prev) => ({ ...prev, [selectedId]: html }))
-            }
-          />
-        </div>
-      </div>
-
-      {/* ── Version panel ── */}
-      <div className="w-60 shrink-0 flex flex-col overflow-hidden bg-card">
-        <div className="px-4 py-3 border-b border-border shrink-0">
-          <p className="text-xs font-bold text-primary uppercase tracking-widest">Versions</p>
-          <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
-        </div>
-        <div className="flex-1 overflow-y-auto p-3 space-y-2">
-          {versions.map((v) => {
-            const isActive = v.id === selectedId;
-            return (
-              <button
-                key={v.id}
-                onClick={() => setSelectedId(v.id)}
-                className={`w-full text-left rounded-xl border p-3 transition-all ${
-                  isActive
-                    ? "border-primary/50 bg-primary/10"
-                    : "border-border hover:border-border/80 hover:bg-secondary/40"
-                }`}
+    <>
+      <div className="flex h-full overflow-hidden">
+        {/* ── Rich Text Editor ── */}
+        <div className="flex-1 flex flex-col min-w-0 border-r border-border overflow-hidden">
+          {/* Header bar above toolbar */}
+          <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card shrink-0">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full shrink-0 ${active.type === "original" ? "bg-muted-foreground" : "bg-primary"}`} />
+              <span className="text-xs font-semibold text-foreground">{active.label}</span>
+              <span className="text-xs text-muted-foreground">·</span>
+              <span className="text-xs text-muted-foreground truncate max-w-[180px]">{active.sublabel}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs rounded-full px-3" onClick={handleCopy}>
+                {copied ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3" />}
+                {copied ? "Copied" : "Copy"}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1.5 text-xs rounded-full px-3"
+                onClick={() => { setSaveName(""); setSaveOpen(true); }}
               >
-                <div className="flex items-center gap-2 mb-1">
-                  {v.type === "improved" ? (
-                    <Sparkles className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
-                  ) : (
-                    <FileText className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
-                  )}
-                  <span className={`text-xs font-bold ${isActive ? "text-primary" : "text-foreground"}`}>
-                    {v.label}
-                  </span>
-                </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">{v.sublabel}</p>
-                <div className="flex items-center gap-1 mt-2">
-                  <Clock className="h-3 w-3 text-muted-foreground/60" />
-                  <span className="text-[10px] text-muted-foreground/60">{v.date}</span>
-                </div>
-                {v.type === "improved" && (
-                  <div className="mt-2">
-                    <span className="text-[10px] font-semibold bg-primary/10 text-primary rounded-full px-2 py-0.5 border border-primary/20">
-                      AI Enhanced
+                <Save className="h-3 w-3" /> Save version
+              </Button>
+              <Button
+                size="sm"
+                className="h-7 gap-1.5 text-xs rounded-full px-3 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/30"
+                variant="ghost"
+                onClick={() => { setEnhancePrompt(""); setEnhanceError(""); setEnhanceOpen(true); }}
+              >
+                <Wand2 className="h-3 w-3" /> Enhance with AI
+              </Button>
+              <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs rounded-full px-3">
+                <Download className="h-3 w-3" /> Export PDF
+              </Button>
+            </div>
+          </div>
+
+          {/* Tiptap editor — remounts when version changes so content resets cleanly */}
+          <div className="flex-1 overflow-hidden">
+            <RichTextEditor
+              key={`${selectedId}`}
+              content={content}
+              onChange={(html) =>
+                setEditedContent((prev) => ({ ...prev, [selectedId]: html }))
+              }
+            />
+          </div>
+        </div>
+
+        {/* ── Version panel ── */}
+        <div className="w-60 shrink-0 flex flex-col overflow-hidden bg-card">
+          <div className="px-4 py-3 border-b border-border shrink-0">
+            <p className="text-xs font-bold text-primary uppercase tracking-widest">Versions</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
+          </div>
+          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            {localVersions.map((v) => {
+              const isActive = v.id === selectedId;
+              return (
+                <button
+                  key={v.id}
+                  onClick={() => setSelectedId(v.id)}
+                  className={`w-full text-left rounded-xl border p-3 transition-all ${
+                    isActive
+                      ? "border-primary/50 bg-primary/10"
+                      : "border-border hover:border-border/80 hover:bg-secondary/40"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    {v.type === "improved" ? (
+                      <Sparkles className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+                    ) : (
+                      <FileText className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+                    )}
+                    <span className={`text-xs font-bold truncate ${isActive ? "text-primary" : "text-foreground"}`}>
+                      {v.label}
                     </span>
                   </div>
-                )}
-              </button>
-            );
-          })}
+                  <p className="text-[11px] text-muted-foreground leading-relaxed truncate">{v.sublabel}</p>
+                  <div className="flex items-center gap-1 mt-2">
+                    <Clock className="h-3 w-3 text-muted-foreground/60" />
+                    <span className="text-[10px] text-muted-foreground/60">{v.date}</span>
+                  </div>
+                  {v.type === "improved" && (
+                    <div className="mt-2">
+                      <span className="text-[10px] font-semibold bg-primary/10 text-primary rounded-full px-2 py-0.5 border border-primary/20">
+                        AI Enhanced
+                      </span>
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+
+            {/* Enhance shortcut at bottom of version list */}
+            <button
+              onClick={() => { setEnhancePrompt(""); setEnhanceError(""); setEnhanceOpen(true); }}
+              className="w-full rounded-xl border border-dashed border-primary/30 p-3 text-left hover:bg-primary/5 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Wand2 className="h-3.5 w-3.5 text-primary/60" />
+                <span className="text-xs text-primary/70 font-medium">Enhance with AI…</span>
+              </div>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* ── Enhance with AI dialog ── */}
+      <Dialog open={enhanceOpen} onOpenChange={(o) => { if (!enhancing) setEnhanceOpen(o); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wand2 className="h-4 w-4 text-primary" />
+              Enhance with AI
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              Optionally describe what you'd like the AI to focus on. Leave blank for a general improvement.
+            </p>
+            <Textarea
+              placeholder="e.g. Make it more concise, add quantified results, tailor for a tech startup…"
+              value={enhancePrompt}
+              onChange={(e) => setEnhancePrompt(e.target.value)}
+              className="min-h-[90px] resize-none text-sm"
+              disabled={enhancing}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && !enhancing) handleEnhance();
+              }}
+            />
+            {enhanceError && (
+              <p className="text-xs text-red-400 bg-red-400/10 rounded-lg px-3 py-2">{enhanceError}</p>
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setEnhanceOpen(false)} disabled={enhancing}>
+              Cancel
+            </Button>
+            <Button size="sm" onClick={handleEnhance} disabled={enhancing} className="gap-2 min-w-[110px]">
+              {enhancing ? (
+                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Enhancing…</>
+              ) : (
+                <><Wand2 className="h-3.5 w-3.5" /> Enhance</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Save version dialog ── */}
+      <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Save className="h-4 w-4 text-primary" />
+              Save as version
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              Give this version a name to save the current state of the document.
+            </p>
+            <Input
+              placeholder={`Version ${localVersions.length + 1}`}
+              value={saveName}
+              onChange={(e) => setSaveName(e.target.value)}
+              className="text-sm"
+              onKeyDown={(e) => { if (e.key === "Enter") handleSaveVersion(); }}
+              autoFocus
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setSaveOpen(false)}>Cancel</Button>
+            <Button size="sm" onClick={handleSaveVersion} className="gap-2">
+              <Save className="h-3.5 w-3.5" /> Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
@@ -972,7 +1144,7 @@ const Candidates = () => {
             {/* ── CV Editor ── */}
             <TabsContent value="cv" className="flex-1 overflow-hidden mt-0 min-h-0">
               {candidateCvVersions.length > 0 ? (
-                <DocEditorTab key={`cv-${selected.id}`} versions={candidateCvVersions} label="Curriculum Vitae" />
+                <DocEditorTab key={`cv-${selected.id}`} versions={candidateCvVersions} label="Curriculum Vitae" docType="cv" />
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground">No CV uploaded yet</div>
               )}
@@ -981,7 +1153,7 @@ const Candidates = () => {
             {/* ── Cover Letter Editor ── */}
             <TabsContent value="cover-letter" className="flex-1 overflow-hidden mt-0 min-h-0">
               {candidateClVersions.length > 0 ? (
-                <DocEditorTab key={`cl-${selected.id}`} versions={candidateClVersions} label="Cover Letter" />
+                <DocEditorTab key={`cl-${selected.id}`} versions={candidateClVersions} label="Cover Letter" docType="cover-letter" />
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground">No cover letter uploaded yet</div>
               )}
