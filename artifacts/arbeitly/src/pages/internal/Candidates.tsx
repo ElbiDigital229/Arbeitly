@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import RichTextEditor from "@/components/editor/RichTextEditor";
+import PdfExportDialog from "@/components/editor/PdfExportDialog";
 import {
   Search, User, Mail, Phone, Linkedin, MapPin, Calendar, Briefcase,
   GraduationCap, Target, FileText, Download, CheckCircle, AlertCircle,
@@ -588,6 +589,9 @@ const DocEditorTab = ({
   const [saveOpen, setSaveOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
 
+  // Export PDF dialog state
+  const [exportOpen, setExportOpen] = useState(false);
+
   const active = localVersions.find((v) => v.id === selectedId) ?? localVersions[0];
   const content = editedContent[selectedId] ?? active.content;
 
@@ -686,7 +690,12 @@ const DocEditorTab = ({
               >
                 <Wand2 className="h-3 w-3" /> Enhance with AI
               </Button>
-              <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs rounded-full px-3">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 gap-1.5 text-xs rounded-full px-3"
+                onClick={() => setExportOpen(true)}
+              >
                 <Download className="h-3 w-3" /> Export PDF
               </Button>
             </div>
@@ -835,6 +844,14 @@ const DocEditorTab = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── PDF Export dialog ── */}
+      <PdfExportDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        content={content}
+        title={`${label} — ${active.label}`}
+      />
     </>
   );
 };
