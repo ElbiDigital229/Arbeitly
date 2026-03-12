@@ -31,25 +31,25 @@ import {
 import logo from "@/assets/logo.png";
 
 const customerItems = [
-  { title: "Board", url: "/", icon: Columns3 },
-  { title: "Applications", url: "/applications", icon: Briefcase },
-  { title: "Documents", url: "/documents", icon: FileText },
-  { title: "Upload CV", url: "/upload", icon: Upload },
-  { title: "Cover Letter", url: "/cover-letter", icon: PenTool },
-  { title: "Analytics", url: "/analytics", icon: BarChart3 },
+  { title: "Board", url: "/employee/portal", icon: Columns3 },
+  { title: "Applications", url: "/employee/applications", icon: Briefcase },
+  { title: "Documents", url: "/employee/documents", icon: FileText },
+  { title: "Upload CV", url: "/employee/upload", icon: Upload },
+  { title: "Cover Letter", url: "/employee/cover-letter", icon: PenTool },
+  { title: "Analytics", url: "/employee/analytics", icon: BarChart3 },
 ];
 
 const internalItems = [
-  { title: "Operations", url: "/internal", icon: LayoutDashboard },
-  { title: "Candidates", url: "/internal/candidates", icon: Users },
-  { title: "Job Discovery", url: "/internal/jobs", icon: Search },
+  { title: "Operations", url: "/employee/internal", icon: LayoutDashboard },
+  { title: "Candidates", url: "/employee/internal/candidates", icon: Users },
+  { title: "Job Discovery", url: "/employee/internal/jobs", icon: Search },
 ];
 
 const adminItems = [
-  { title: "Admin", url: "/admin", icon: Shield },
-  { title: "CV Prompts", url: "/admin/cv-prompts", icon: FileText },
-  { title: "CL Prompts", url: "/admin/cl-prompts", icon: PenTool },
-  { title: "AI Settings", url: "/admin/ai-settings", icon: Wand2 },
+  { title: "Admin", url: "/employee/admin", icon: Shield },
+  { title: "CV Prompts", url: "/employee/admin/cv-prompts", icon: FileText },
+  { title: "CL Prompts", url: "/employee/admin/cl-prompts", icon: PenTool },
+  { title: "AI Settings", url: "/employee/admin/ai-settings", icon: Wand2 },
 ];
 
 export function PortalSidebar() {
@@ -65,7 +65,7 @@ export function PortalSidebar() {
           <img src={logo} alt="Arbeitly" className="h-7" />
           {!collapsed && (
             <span className="font-display text-base font-bold text-sidebar-foreground">
-              Portal
+              Employee
             </span>
           )}
         </div>
@@ -130,8 +130,8 @@ export function PortalSidebar() {
       <SidebarFooter className="border-t border-border">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={isActive("/settings")}>
-              <NavLink to="/settings" end>
+            <SidebarMenuButton asChild isActive={isActive("/employee/settings")}>
+              <NavLink to="/employee/settings" end>
                 <Settings className="h-4 w-4" />
                 {!collapsed && <span>Settings</span>}
               </NavLink>
@@ -139,7 +139,7 @@ export function PortalSidebar() {
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <NavLink to="/login">
+              <NavLink to="/employee/login">
                 <LogOut className="h-4 w-4" />
                 {!collapsed && <span>Log out</span>}
               </NavLink>

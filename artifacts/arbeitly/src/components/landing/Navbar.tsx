@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { LayoutDashboard } from "lucide-react";
 import logo from "@/assets/logo.png";
 
 const Navbar = () => {
@@ -11,12 +12,18 @@ const Navbar = () => {
         </Link>
 
         <div className="hidden md:flex items-center gap-8">
-          <a href="/" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Features</a>
-          <a href="/" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">How It Works</a>
+          <a href="#features" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Features</a>
+          <a href="#how-it-works" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">How It Works</a>
           <Link to="/pricing" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">Pricing</Link>
         </div>
 
         <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" className="rounded-full gap-2 border-border/60 text-muted-foreground hover:text-foreground" asChild>
+            <Link to="/employee/login">
+              <LayoutDashboard className="h-3.5 w-3.5" />
+              Employee Portal
+            </Link>
+          </Button>
           <Button variant="ghost" size="sm" asChild>
             <Link to="/login">Sign In</Link>
           </Button>

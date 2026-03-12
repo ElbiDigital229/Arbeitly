@@ -4,12 +4,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
+import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Payment from "./pages/Payment";
 import Onboarding from "./pages/Onboarding";
-import NotFound from "./pages/NotFound";
 import Pricing from "./pages/Pricing";
+import NotFound from "./pages/NotFound";
+import EmployeeLogin from "./pages/EmployeeLogin";
 
 import CustomerLayout from "./components/customer/CustomerLayout";
 import CustomerDashboard from "./pages/customer/CustomerDashboard";
@@ -40,12 +42,18 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* ── Public / Onboarding flow ── */}
+          {/* ── Public landing ── */}
+          <Route path="/" element={<Index />} />
           <Route path="/pricing" element={<Pricing />} />
+
+          {/* ── Customer onboarding flow ── */}
           <Route path="/register" element={<Register />} />
           <Route path="/payment" element={<Payment />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/login" element={<Login />} />
+
+          {/* ── Employee login ── */}
+          <Route path="/employee/login" element={<EmployeeLogin />} />
 
           {/* ── Customer portal ── */}
           <Route element={<CustomerLayout />}>
@@ -54,22 +62,22 @@ const App = () => (
             <Route path="/customer/settings" element={<CustomerSettings />} />
           </Route>
 
-          {/* ── Internal / Employee portal ── */}
+          {/* ── Employee / Internal portal ── */}
           <Route element={<PortalLayout />}>
-            <Route path="/" element={<BoardView />} />
-            <Route path="/applications" element={<Applications />} />
-            <Route path="/documents" element={<Documents />} />
-            <Route path="/upload" element={<UploadCV />} />
-            <Route path="/cover-letter" element={<CoverLetter />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/settings" element={<DashboardSettings />} />
-            <Route path="/internal" element={<InternalOverview />} />
-            <Route path="/internal/candidates" element={<Candidates />} />
-            <Route path="/internal/jobs" element={<Jobs />} />
-            <Route path="/admin" element={<AdminOverview />} />
-            <Route path="/admin/cv-prompts" element={<PromptManager type="cv" />} />
-            <Route path="/admin/cl-prompts" element={<PromptManager type="cover-letter" />} />
-            <Route path="/admin/ai-settings" element={<AISettings />} />
+            <Route path="/employee/portal" element={<BoardView />} />
+            <Route path="/employee/applications" element={<Applications />} />
+            <Route path="/employee/documents" element={<Documents />} />
+            <Route path="/employee/upload" element={<UploadCV />} />
+            <Route path="/employee/cover-letter" element={<CoverLetter />} />
+            <Route path="/employee/analytics" element={<Analytics />} />
+            <Route path="/employee/settings" element={<DashboardSettings />} />
+            <Route path="/employee/internal" element={<InternalOverview />} />
+            <Route path="/employee/internal/candidates" element={<Candidates />} />
+            <Route path="/employee/internal/jobs" element={<Jobs />} />
+            <Route path="/employee/admin" element={<AdminOverview />} />
+            <Route path="/employee/admin/cv-prompts" element={<PromptManager type="cv" />} />
+            <Route path="/employee/admin/cl-prompts" element={<PromptManager type="cover-letter" />} />
+            <Route path="/employee/admin/ai-settings" element={<AISettings />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />

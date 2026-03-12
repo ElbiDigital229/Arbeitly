@@ -6,23 +6,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-// Pages that use full-bleed (no padding)
-const fullBleedRoutes = ["/"];
+const fullBleedRoutes = ["/employee/portal"];
 
 const pageTitles: Record<string, string> = {
-  "/": "Board",
-  "/applications": "Applications",
-  "/documents": "Documents",
-  "/upload": "Upload CV",
-  "/analytics": "Analytics",
-  "/settings": "Settings",
-  "/internal": "Operations",
-  "/internal/candidates": "Candidates",
-  "/internal/jobs": "Job Discovery",
-  "/admin": "Admin Overview",
-  "/admin/cv-prompts": "CV Prompts",
-  "/admin/cl-prompts": "Cover Letter Prompts",
-  "/admin/ai-settings": "AI Settings",
+  "/employee/portal": "Board",
+  "/employee/applications": "Applications",
+  "/employee/documents": "Documents",
+  "/employee/upload": "Upload CV",
+  "/employee/analytics": "Analytics",
+  "/employee/settings": "Settings",
+  "/employee/internal": "Operations",
+  "/employee/internal/candidates": "Candidates",
+  "/employee/internal/jobs": "Job Discovery",
+  "/employee/admin": "Admin Overview",
+  "/employee/admin/cv-prompts": "CV Prompts",
+  "/employee/admin/cl-prompts": "Cover Letter Prompts",
+  "/employee/admin/ai-settings": "AI Settings",
 };
 
 const PortalLayout = () => {
@@ -35,7 +34,6 @@ const PortalLayout = () => {
       <div className="min-h-screen flex w-full">
         <PortalSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Top bar — Jira-style */}
           <header className="h-12 flex items-center justify-between border-b border-border bg-card px-3 shrink-0">
             <div className="flex items-center gap-2">
               <SidebarTrigger />
@@ -45,10 +43,7 @@ const PortalLayout = () => {
             <div className="hidden md:flex items-center gap-2 flex-1 max-w-md mx-6">
               <div className="relative w-full">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input
-                  placeholder="Search..."
-                  className="h-8 pl-8 text-xs bg-secondary border-none"
-                />
+                <Input placeholder="Search..." className="h-8 pl-8 text-xs bg-secondary border-none" />
               </div>
             </div>
 
@@ -67,7 +62,7 @@ const PortalLayout = () => {
             </div>
           </header>
 
-          <main className={`flex-1 overflow-auto bg-background ${isFullBleed ? '' : 'p-6'}`}>
+          <main className={`flex-1 overflow-auto bg-background ${isFullBleed ? "" : "p-6"}`}>
             <Outlet />
           </main>
         </div>
