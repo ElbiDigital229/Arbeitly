@@ -340,7 +340,7 @@ const Onboarding = () => {
 
                 <FieldGroup title="Documents">
                   <Field label="Upload Your CV">
-                    <label className="flex items-center gap-3 border-2 border-dashed border-border rounded-xl p-4 cursor-pointer hover:border-primary/50 transition-colors group">
+                    <label className="flex items-center gap-3 border-2 border-dashed border-border rounded-xl p-4 cursor-pointer hover:border-primary/50 transition-colors group bg-[hsl(196_89%_9%)]">
                       <Upload className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                       <div>
                         <p className="text-sm font-medium text-foreground">Click to upload CV</p>
@@ -350,7 +350,7 @@ const Onboarding = () => {
                     </label>
                   </Field>
                   <Field label="Upload Your Cover Letter (optional)">
-                    <label className="flex items-center gap-3 border-2 border-dashed border-border rounded-xl p-4 cursor-pointer hover:border-primary/50 transition-colors group">
+                    <label className="flex items-center gap-3 border-2 border-dashed border-border rounded-xl p-4 cursor-pointer hover:border-primary/50 transition-colors group bg-[hsl(196_89%_9%)]">
                       <Upload className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                       <div>
                         <p className="text-sm font-medium text-foreground">Click to upload Cover Letter</p>
