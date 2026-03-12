@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const plans = [
   {
@@ -52,6 +52,8 @@ const plans = [
 ];
 
 const PricingSection = () => {
+  const navigate = useNavigate();
+
   return (
     <section id="pricing" className="py-24 bg-background">
       <div className="container mx-auto px-6">
@@ -92,9 +94,11 @@ const PricingSection = () => {
               <Button
                 className="mt-6 w-full rounded-full"
                 variant={plan.popular ? "default" : "outline"}
-                asChild
+                onClick={() =>
+                  navigate(`/register?plan=${plan.name.toLowerCase()}&price=${plan.price}`)
+                }
               >
-                <Link to="/register">Start Free Trial</Link>
+                Get Started
               </Button>
               <ul className="mt-8 space-y-3">
                 {plan.features.map((feature) => (
