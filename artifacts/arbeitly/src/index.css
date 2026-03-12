@@ -91,3 +91,147 @@
     background: hsl(196 80% 18%);
   }
 }
+
+/* ─── Tiptap / ProseMirror rich text editor ─────────────────────────────── */
+.rte-content {
+  min-height: 100%;
+  color: hsl(188 10% 92%);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.75;
+  caret-color: hsl(188 100% 44%);
+}
+
+.rte-content > * + * {
+  margin-top: 0.5em;
+}
+
+.rte-content p {
+  margin: 0 0 0.4em;
+}
+
+.rte-content h1 {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: hsl(188 10% 97%);
+  letter-spacing: -0.02em;
+  margin: 1.2em 0 0.4em;
+  padding-bottom: 0.25em;
+  border-bottom: 1px solid hsl(196 40% 22%);
+}
+
+.rte-content h2 {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: hsl(188 100% 44%);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 1.2em 0 0.5em;
+}
+
+.rte-content h3 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: hsl(188 10% 95%);
+  margin: 1em 0 0.3em;
+}
+
+.rte-content strong {
+  font-weight: 600;
+  color: hsl(188 10% 97%);
+}
+
+.rte-content em {
+  font-style: italic;
+  color: hsl(196 20% 70%);
+}
+
+.rte-content u {
+  text-underline-offset: 3px;
+}
+
+.rte-content s {
+  color: hsl(196 20% 50%);
+}
+
+.rte-content mark {
+  background-color: hsl(188 100% 44% / 0.25);
+  color: hsl(188 10% 97%);
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+.rte-content ul,
+.rte-content ol {
+  padding-left: 1.4em;
+  margin: 0.3em 0;
+}
+
+.rte-content ul {
+  list-style-type: disc;
+}
+
+.rte-content ol {
+  list-style-type: decimal;
+}
+
+.rte-content li {
+  margin: 0.15em 0;
+  color: hsl(188 10% 88%);
+}
+
+.rte-content li p {
+  margin: 0;
+}
+
+.rte-content hr {
+  border: none;
+  border-top: 1px solid hsl(196 40% 22%);
+  margin: 1em 0;
+}
+
+.rte-content blockquote {
+  border-left: 3px solid hsl(188 100% 44%);
+  padding-left: 1em;
+  color: hsl(196 20% 65%);
+  font-style: italic;
+  margin: 0.5em 0;
+}
+
+.rte-content code {
+  font-family: 'Fira Code', 'Courier New', monospace;
+  font-size: 0.8125rem;
+  background: hsl(196 60% 12%);
+  color: hsl(188 100% 55%);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+}
+
+.rte-content pre {
+  background: hsl(196 60% 10%);
+  border: 1px solid hsl(196 40% 22%);
+  border-radius: 8px;
+  padding: 0.75em 1em;
+  overflow-x: auto;
+}
+
+.rte-content pre code {
+  background: transparent;
+  padding: 0;
+}
+
+/* Selection colour */
+.rte-content ::selection {
+  background-color: hsl(188 100% 44% / 0.3);
+}
+
+/* Placeholder */
+.rte-content p.is-editor-empty:first-child::before {
+  color: hsl(196 20% 40%);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}

@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { Textarea } from "@/components/ui/textarea";
+import RichTextEditor from "@/components/editor/RichTextEditor";
 import {
   Search, User, Mail, Phone, Linkedin, MapPin, Calendar, Briefcase,
   GraduationCap, Target, FileText, Download, CheckCircle, AlertCircle,
@@ -560,7 +560,7 @@ const QA = ({ q, a }: { q: string; a: string }) =>
     </div>
   ) : null;
 
-// Doc editor tab — editor on left, version list on right
+// Doc editor tab — rich text editor on left, version list on right
 const DocEditorTab = ({
   versions,
   label,
@@ -576,19 +576,20 @@ const DocEditorTab = ({
   const content = editedContent[selectedId] ?? active.content;
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(content);
+    const text = content.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   return (
     <div className="flex h-full overflow-hidden">
-      {/* ── Editor ── */}
+      {/* ── Rich Text Editor ── */}
       <div className="flex-1 flex flex-col min-w-0 border-r border-border overflow-hidden">
-        {/* Editor header */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-card shrink-0">
+        {/* Header bar above toolbar */}
+        <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card shrink-0">
           <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${active.type === "original" ? "bg-muted-foreground" : "bg-primary"}`} />
+            <div className={`w-2 h-2 rounded-full shrink-0 ${active.type === "original" ? "bg-muted-foreground" : "bg-primary"}`} />
             <span className="text-xs font-semibold text-foreground">{active.label}</span>
             <span className="text-xs text-muted-foreground">·</span>
             <span className="text-xs text-muted-foreground">{active.sublabel}</span>
@@ -603,22 +604,22 @@ const DocEditorTab = ({
             </Button>
           </div>
         </div>
-        {/* Textarea */}
-        <div className="flex-1 overflow-hidden p-4">
-          <Textarea
-            value={content}
-            onChange={(e) =>
-              setEditedContent((prev) => ({ ...prev, [selectedId]: e.target.value }))
+
+        {/* Tiptap editor — remounts when version changes so content resets cleanly */}
+        <div className="flex-1 overflow-hidden">
+          <RichTextEditor
+            key={`${selectedId}`}
+            content={content}
+            onChange={(html) =>
+              setEditedContent((prev) => ({ ...prev, [selectedId]: html }))
             }
-            className="w-full h-full resize-none font-mono text-sm leading-relaxed bg-[hsl(196_89%_7%)] border-border rounded-xl focus-visible:ring-1 focus-visible:ring-primary/50 text-foreground"
-            spellCheck={false}
           />
         </div>
       </div>
 
       {/* ── Version panel ── */}
-      <div className="w-60 shrink-0 flex flex-col overflow-hidden">
-        <div className="px-4 py-3 border-b border-border bg-card shrink-0">
+      <div className="w-60 shrink-0 flex flex-col overflow-hidden bg-card">
+        <div className="px-4 py-3 border-b border-border shrink-0">
           <p className="text-xs font-bold text-primary uppercase tracking-widest">Versions</p>
           <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
         </div>
@@ -632,7 +633,7 @@ const DocEditorTab = ({
                 className={`w-full text-left rounded-xl border p-3 transition-all ${
                   isActive
                     ? "border-primary/50 bg-primary/10"
-                    : "border-border bg-card hover:border-border/80 hover:bg-secondary/40"
+                    : "border-border hover:border-border/80 hover:bg-secondary/40"
                 }`}
               >
                 <div className="flex items-center gap-2 mb-1">
