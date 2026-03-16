@@ -112,3 +112,21 @@ Utility scripts package. Each script is a `.ts` file in `src/` with a correspond
 - List mode: searchable/filterable table with status badges
 - Kanban mode: 5 columns (To Apply → Applied → Interview → Offer → Rejected) with DnD cards using `@dnd-kit`, candidate filter works in both modes
 - Self-drop guard in `moveCard` to prevent accidental reordering
+
+## Candidate Portal
+
+Self-service portal for job candidates (Anna Schmidt seed data). Accessible via "Candidate Portal" button in landing navbar → `/candidate/login`.
+
+### Structure
+- `src/components/candidate/CandidateLayout.tsx` — Layout with sidebar + header + outlet (mirrors PortalLayout)
+- `src/components/candidate/CandidateSidebar.tsx` — Sidebar with Board, Applications, Documents, Upload CV, Analytics nav items + Settings/Logout in footer
+- `src/pages/candidate/CandidateLogin.tsx` — Login page pre-filled with Anna Schmidt credentials
+- `src/pages/candidate/CandidateBoard.tsx` — Kanban board with 5 columns, seed application cards
+- `src/pages/candidate/CandidateApplications.tsx` — Searchable/filterable application list with status badges, location, salary
+- `src/pages/candidate/CandidateDocuments.tsx` — CV version cards (3 versions, Active badge) + Other Documents list
+- `src/pages/candidate/CandidateUpload.tsx` — Drag-and-drop upload with doc type/version selects + guidelines panel
+- `src/pages/candidate/CandidateAnalytics.tsx` — Stats bar + 4 Recharts (Pie, Line, Bar, Radar) + Performance Insights
+- `src/pages/candidate/CandidateSettings.tsx` — Profile form, language preference, notification toggles (Switch), privacy section
+
+### Routes
+All under `/candidate/*`: login, portal, applications, documents, upload, analytics, settings

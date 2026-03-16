@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard } from "lucide-react";
+import { LayoutDashboard, UserCircle } from "lucide-react";
 import logo from "@/assets/logo.png";
 
 const Navbar = () => {
@@ -18,6 +18,12 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" className="rounded-full gap-2 border-border/60 text-muted-foreground hover:text-foreground" asChild>
+            <Link to="/candidate/login">
+              <UserCircle className="h-3.5 w-3.5" />
+              Candidate Portal
+            </Link>
+          </Button>
           <Button variant="outline" size="sm" className="rounded-full gap-2 border-border/60 text-muted-foreground hover:text-foreground" asChild>
             <Link to="/employee/login">
               <LayoutDashboard className="h-3.5 w-3.5" />

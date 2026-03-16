@@ -14,6 +14,15 @@ import Pricing from "./pages/Pricing";
 import NotFound from "./pages/NotFound";
 import EmployeeLogin from "./pages/EmployeeLogin";
 
+import CandidateLogin from "./pages/candidate/CandidateLogin";
+import CandidatePortalLayout from "./components/candidate/CandidateLayout";
+import CandidateBoard from "./pages/candidate/CandidateBoard";
+import CandidateApplications from "./pages/candidate/CandidateApplications";
+import CandidateDocuments from "./pages/candidate/CandidateDocuments";
+import CandidateUpload from "./pages/candidate/CandidateUpload";
+import CandidateAnalytics from "./pages/candidate/CandidateAnalytics";
+import CandidateSettings from "./pages/candidate/CandidateSettings";
+
 import CustomerLayout from "./components/customer/CustomerLayout";
 import CustomerDashboard from "./pages/customer/CustomerDashboard";
 import CustomerJobs from "./pages/customer/CustomerJobs";
@@ -56,6 +65,19 @@ const App = () => (
 
           {/* ── Employee login ── */}
           <Route path="/employee/login" element={<EmployeeLogin />} />
+
+          {/* ── Candidate login ── */}
+          <Route path="/candidate/login" element={<CandidateLogin />} />
+
+          {/* ── Candidate portal ── */}
+          <Route element={<CandidatePortalLayout />}>
+            <Route path="/candidate/portal" element={<CandidateBoard />} />
+            <Route path="/candidate/applications" element={<CandidateApplications />} />
+            <Route path="/candidate/documents" element={<CandidateDocuments />} />
+            <Route path="/candidate/upload" element={<CandidateUpload />} />
+            <Route path="/candidate/analytics" element={<CandidateAnalytics />} />
+            <Route path="/candidate/settings" element={<CandidateSettings />} />
+          </Route>
 
           {/* ── Customer portal ── */}
           <Route element={<CustomerLayout />}>
