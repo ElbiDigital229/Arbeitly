@@ -34,6 +34,11 @@ export const statusColors: Record<ApplicationStatus, string> = {
   rejected: "bg-[hsl(0_72%_51%/0.15)] text-[hsl(0_72%_61%)]",
 };
 
+export const candidateNames = [
+  "Anna Schmidt", "Thomas Wagner", "Lisa Müller",
+  "Peter Fischer", "Maria Becker", "Hans Schulz",
+];
+
 export const initialApplications: Application[] = [
   {
     id: "1", status: "to-apply", candidate: "Anna Schmidt", job: "DevOps Engineer", company: "Bosch",

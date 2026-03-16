@@ -8,6 +8,7 @@ import AddJobDialog from "@/components/dialogs/AddJobDialog";
 import { useToast } from "@/hooks/use-toast";
 import { useApplications } from "@/context/ApplicationsContext";
 import type { Application, ApplicationStatus } from "@/data/applications";
+import { candidateNames } from "@/data/applications";
 import { useState } from "react";
 import {
   DndContext,
@@ -34,10 +35,6 @@ const columnDefs: ColumnDef[] = [
   { id: "rejected", title: "Rejected", color: "bg-destructive" },
 ];
 
-const candidateNames = [
-  "Anna Schmidt", "Thomas Wagner", "Lisa Müller",
-  "Peter Fischer", "Maria Becker", "Hans Schulz",
-];
 
 // ─── Sortable card ────────────────────────────────────────────────────────────
 
