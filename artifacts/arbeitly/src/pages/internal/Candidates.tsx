@@ -21,7 +21,7 @@ import {
   Globe, Star, Award, ChevronRight, Sparkles, Clock, Copy, Check,
   Wand2, Loader2, Save, ExternalLink, Image, Plus, Eye, EyeOff,
   KeyRound, Shield, Pencil, Zap, Building, ChevronDown, ChevronUp,
-  GripVertical, MoreHorizontal,
+  GripVertical,
 } from "lucide-react";
 import {
   DndContext,
