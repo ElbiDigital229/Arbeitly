@@ -3,16 +3,22 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useApplications } from "@/context/ApplicationsContext";
 import { useToast } from "@/hooks/use-toast";
 import {
   Search, ExternalLink, MapPin, Building, ChevronDown, ChevronUp,
   Zap, Clock, RefreshCw, TrendingUp, Star, UserCheck, Briefcase, Plus,
+  X, Tag,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type JobSource = "LinkedIn" | "Indeed" | "Google Jobs" | "StepStone" | "XING";
+type JobSource = "LinkedIn" | "Indeed" | "Google Jobs" | "StepStone" | "XING" | "Manual";
 
 type JobListing = {
   id: string;
@@ -122,6 +128,7 @@ const sourceBadgeColors: Record<JobSource, string> = {
   "Google Jobs": "bg-[#EA4335]/15 text-[#EA4335]",
   StepStone: "bg-[#E8650A]/15 text-[#E8650A]",
   XING: "bg-[#006567]/15 text-[#00a0a0]",
+  Manual: "bg-primary/15 text-primary",
 };
 
 const planColors: Record<string, string> = {
@@ -315,13 +322,66 @@ const thresholdOptions = [
   { label: "90%+", value: 90 },
 ];
 
+// ─── Blank form state ─────────────────────────────────────────────────────────
+
+const blankForm = {
+  title: "", company: "", location: "", source: "Manual" as JobSource,
+  url: "", description: "", skillsRaw: "", salaryRange: "",
+};
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
 const Jobs = () => {
   const { addApplication } = useApplications();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [threshold, setThreshold] = useState(0);
+  const [allJobs, setAllJobs] = useState<JobListing[]>(jobs);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [form, setForm] = useState(blankForm);
+  const [tagInput, setTagInput] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
 
-  const filtered = jobs.filter((j) => {
+  const set = (field: keyof typeof blankForm, value: string) =>
+    setForm((f) => ({ ...f, [field]: value }));
+
+  const addTag = () => {
+    const v = tagInput.trim();
+    if (v && !tags.includes(v)) setTags((t) => [...t, v]);
+    setTagInput("");
+  };
+
+  const handleOpen = () => {
+    setForm(blankForm);
+    setTags([]);
+    setTagInput("");
+    setDialogOpen(true);
+  };
+
+  const handleSubmit = () => {
+    if (!form.title.trim() || !form.company.trim()) {
+      toast({ title: "Required fields missing", description: "Title and company are required.", variant: "destructive" });
+      return;
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    const newJob: JobListing = {
+      id: `manual-${Date.now()}`,
+      title: form.title.trim(),
+      company: form.company.trim(),
+      location: form.location.trim() || "Remote",
+      source: form.source,
+      url: form.url.trim(),
+      dateDiscovered: today,
+      description: form.description.trim() || "No description provided.",
+      skills: tags.length > 0 ? tags : form.skillsRaw.split(",").map((s) => s.trim()).filter(Boolean),
+      salaryRange: form.salaryRange.trim(),
+    };
+    setAllJobs((prev) => [newJob, ...prev]);
+    setDialogOpen(false);
+    toast({ title: "Job added", description: `${newJob.title} at ${newJob.company} added to Job Discovery.` });
+  };
+
+  const filtered = allJobs.filter((j) => {
     const q = search.toLowerCase();
     return (
       j.title.toLowerCase().includes(q) ||
@@ -360,6 +420,112 @@ const Jobs = () => {
 
   return (
     <div className="flex flex-col h-full -m-6 overflow-hidden">
+      {/* ── Add Job Dialog ── */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-4 w-4 text-primary" /> Add Job Manually
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[65vh] pr-3">
+            <div className="space-y-4 pb-1">
+              {/* Title + Company */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Job Title <span className="text-destructive">*</span></Label>
+                  <Input placeholder="e.g. Senior UX Designer" value={form.title} onChange={(e) => set("title", e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Company <span className="text-destructive">*</span></Label>
+                  <Input placeholder="e.g. Zalando SE" value={form.company} onChange={(e) => set("company", e.target.value)} />
+                </div>
+              </div>
+
+              {/* Location + Source */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Location</Label>
+                  <Input placeholder="e.g. Berlin (Hybrid)" value={form.location} onChange={(e) => set("location", e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Source</Label>
+                  <Select value={form.source} onValueChange={(v) => set("source", v as JobSource)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Manual">Manual</SelectItem>
+                      <SelectItem value="LinkedIn">LinkedIn</SelectItem>
+                      <SelectItem value="Indeed">Indeed</SelectItem>
+                      <SelectItem value="Google Jobs">Google Jobs</SelectItem>
+                      <SelectItem value="StepStone">StepStone</SelectItem>
+                      <SelectItem value="XING">XING</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Salary + URL */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Salary Range</Label>
+                  <Input placeholder="e.g. €60k–€80k" value={form.salaryRange} onChange={(e) => set("salaryRange", e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Job URL</Label>
+                  <Input placeholder="https://…" value={form.url} onChange={(e) => set("url", e.target.value)} />
+                </div>
+              </div>
+
+              {/* Skills tag builder */}
+              <div className="space-y-1.5">
+                <Label>Required Skills</Label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Type a skill and press Enter or +"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
+                    className="flex-1"
+                  />
+                  <Button type="button" variant="secondary" size="sm" onClick={addTag} className="shrink-0">
+                    <Tag className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                {tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {tags.map((t) => (
+                      <span key={t} className="flex items-center gap-1 bg-primary/10 text-primary text-xs font-medium px-2 py-0.5 rounded-full">
+                        {t}
+                        <button onClick={() => setTags((prev) => prev.filter((x) => x !== t))}>
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Description */}
+              <div className="space-y-1.5">
+                <Label>Job Description</Label>
+                <Textarea
+                  placeholder="Paste the job description here…"
+                  className="min-h-[100px] text-sm resize-none"
+                  value={form.description}
+                  onChange={(e) => set("description", e.target.value)}
+                />
+              </div>
+            </div>
+          </ScrollArea>
+          <DialogFooter className="mt-2">
+            <Button variant="ghost" onClick={() => setDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSubmit}>
+              <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Job
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* ── Header ── */}
       <div className="shrink-0 px-6 py-4 border-b border-border bg-card">
         <div className="flex items-start justify-between gap-4">
@@ -368,10 +534,13 @@ const Jobs = () => {
               <Zap className="h-5 w-5 text-primary" /> Job Discovery
             </h1>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {jobs.length} jobs found across {new Set(jobs.map((j) => j.source)).size} sources
+              {allJobs.length} jobs found across {new Set(allJobs.map((j) => j.source)).size} sources
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-3 shrink-0">
+            <Button size="sm" onClick={handleOpen} className="h-8 gap-1.5">
+              <Plus className="h-3.5 w-3.5" /> Add Manually
+            </Button>
             <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <RefreshCw className="h-3 w-3" /> Last synced: 2 min ago
             </span>
