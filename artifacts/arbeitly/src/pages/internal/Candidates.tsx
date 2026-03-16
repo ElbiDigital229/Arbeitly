@@ -1020,7 +1020,12 @@ function MiniSortableCard({ card }: { card: Application }) {
         <CardContent className="p-2.5">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-card-foreground leading-snug truncate">{card.job}</p>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <p className="text-xs font-medium text-card-foreground leading-snug truncate">{card.job}</p>
+                <span className={`text-[8px] font-bold px-1.5 py-0 rounded-full leading-relaxed ${appStatusColors[card.status]}`}>
+                  {statusLabels[card.status]}
+                </span>
+              </div>
               <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{card.company}</p>
             </div>
             <div {...listeners} className="ml-1.5 mt-0.5 text-muted-foreground hover:text-foreground shrink-0">
