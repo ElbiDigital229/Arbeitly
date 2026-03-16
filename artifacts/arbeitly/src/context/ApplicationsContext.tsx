@@ -31,6 +31,7 @@ export const ApplicationsProvider = ({ children }: { children: ReactNode }) => {
     setApplications((prev) => {
       const card = prev.find((a) => a.id === id);
       if (!card) return prev;
+      if (afterId === id) return prev.map((a) => (a.id === id ? { ...a, status: toStatus } : a));
       const rest = prev.filter((a) => a.id !== id);
       const updated = { ...card, status: toStatus };
       if (!afterId) return [...rest, updated];

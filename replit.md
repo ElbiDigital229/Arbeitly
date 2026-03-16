@@ -94,3 +94,21 @@ Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHea
 ### `scripts` (`@workspace/scripts`)
 
 Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+
+## Arbeitly Employee Portal Features
+
+### Shared Data Files
+- `src/data/jobs.ts` — Shared `JobListing`, `JobSource` types, `seedJobs` array (8 listings), `computeScore()` function, and display helpers (`sourceBadgeColors`, `scoreColor`, `scoreBarColor`). Consumed by both `Jobs.tsx` (global Job Discovery page) and `Candidates.tsx` (per-candidate Job Discovery tab).
+- `src/data/applications.ts` — Shared `Application`, `ApplicationStatus` types, seed data, status labels/colors.
+- `src/context/ApplicationsContext.tsx` — Shared context providing `applications`, `addApplication`, `updateStatus`, `moveCard` used by BoardView, Applications page, and Candidates page.
+
+### Candidate Detail Tabs (Candidates.tsx)
+8 tabs: Profile | Applications | Onboarding | CV | Cover Letter | Files | Account | Job Discovery
+- **Job Discovery tab**: Shows all jobs from `seedJobs` ranked by match score for the selected candidate's skills. Expandable cards with score bar, skill highlighting (matching skills in primary color), source badge, salary, description, and "Add to Queue" button wired to `ApplicationsContext`.
+
+### Applications Page (dashboard/Applications.tsx, route: /employee/applications)
+- Uses shared `ApplicationsContext` (same data as BoardView)
+- **List/Kanban toggle** in header
+- List mode: searchable/filterable table with status badges
+- Kanban mode: 5 columns (To Apply → Applied → Interview → Offer → Rejected) with DnD cards using `@dnd-kit`, candidate filter works in both modes
+- Self-drop guard in `moveCard` to prevent accidental reordering

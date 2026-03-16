@@ -18,8 +18,12 @@ import {
   GraduationCap, Target, FileText, Download, CheckCircle, AlertCircle,
   Globe, Star, Award, ChevronRight, Sparkles, Clock, Copy, Check,
   Wand2, Loader2, Save, ExternalLink, Image, Plus, Eye, EyeOff,
-  KeyRound, Shield, Pencil,
+  KeyRound, Shield, Pencil, Zap, Building, ChevronDown, ChevronUp,
 } from "lucide-react";
+import {
+  type JobListing,
+  seedJobs, computeScore, sourceBadgeColors, scoreColor, scoreBarColor,
+} from "@/data/jobs";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -1203,6 +1207,7 @@ const Candidates = () => {
                 <TabsTrigger value="cover-letter" className="gap-1.5 text-xs h-7"><Sparkles className="h-3.5 w-3.5" />Cover Letter</TabsTrigger>
                 <TabsTrigger value="documents" className="gap-1.5 text-xs h-7"><Download className="h-3.5 w-3.5" />Files</TabsTrigger>
                 <TabsTrigger value="account" className="gap-1.5 text-xs h-7"><Shield className="h-3.5 w-3.5" />Account</TabsTrigger>
+                <TabsTrigger value="job-discovery" className="gap-1.5 text-xs h-7"><Zap className="h-3.5 w-3.5" />Job Discovery</TabsTrigger>
               </TabsList>
             </div>
 
@@ -1492,11 +1497,144 @@ const Candidates = () => {
                 </div>
               </div>
             </TabsContent>
+
+            {/* ── Job Discovery ── */}
+            <TabsContent value="job-discovery" className="flex-1 overflow-y-auto p-6 mt-0">
+              <CandidateJobDiscovery candidate={selected} />
+            </TabsContent>
           </Tabs>
         </motion.div>
       </AnimatePresence>
     </div>
   );
 };
+
+// ─── Candidate Job Discovery sub-component ────────────────────────────────────
+
+function CandidateJobDiscovery({ candidate }: { candidate: Candidate }) {
+  const { addApplication } = useApplications();
+  const { toast } = useToast();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [addedJobs, setAddedJobs] = useState<Set<string>>(new Set());
+
+  const scored = seedJobs
+    .map((job) => ({ ...job, score: computeScore(job.skills, candidate.skills) }))
+    .sort((a, b) => b.score - a.score);
+
+  const handleAdd = (job: JobListing, score: number) => {
+    addApplication({
+      candidate: candidate.name,
+      job: job.title,
+      company: job.company,
+      cvVersion: "v1",
+      status: "to-apply",
+      datePosted: job.dateDiscovered,
+      dateSubmitted: "",
+      salaryExpectation: job.salaryRange,
+      jobUrl: job.url,
+      notes: `Discovered via ${job.source}. Match score: ${score}%.`,
+    });
+    setAddedJobs((prev) => new Set(prev).add(job.id));
+    toast({ title: "Added to queue", description: `${job.title} added to ${candidate.name}'s applications.` });
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <Zap className="h-4 w-4 text-primary" /> Job Matches for {candidate.name}
+        </h3>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          {scored.length} jobs ranked by skill match · Candidate skills: {candidate.skills.join(", ")}
+        </p>
+      </div>
+
+      <div className="space-y-2.5">
+        {scored.map((job) => {
+          const isExpanded = expandedId === job.id;
+          const isAdded = addedJobs.has(job.id);
+
+          return (
+            <div key={job.id} className="rounded-2xl border border-border bg-card overflow-hidden">
+              <button
+                className="w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-secondary/30 transition-colors"
+                onClick={() => setExpandedId(isExpanded ? null : job.id)}
+              >
+                <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-xs font-bold text-primary shrink-0 mt-0.5">
+                  {job.company[0]}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">{job.title}</p>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Building className="h-3 w-3" />{job.company}
+                        </span>
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <MapPin className="h-3 w-3" />{job.location}
+                        </span>
+                        <span className="text-xs text-primary font-medium">{job.salaryRange}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${sourceBadgeColors[job.source]}`}>
+                        {job.source}
+                      </span>
+                      <div className={`flex items-center gap-1 text-xs font-bold ${scoreColor(job.score)}`}>
+                        <Star className="h-3 w-3" />
+                        {job.score}%
+                      </div>
+                      {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="flex-1 h-1.5 rounded-full bg-border overflow-hidden">
+                      <div className={`h-full rounded-full transition-all ${scoreBarColor(job.score)}`} style={{ width: `${job.score}%` }} />
+                    </div>
+                    <span className={`text-[10px] font-bold min-w-[28px] ${scoreColor(job.score)}`}>{job.score}%</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {job.skills.map((s) => {
+                      const hasSkill = candidate.skills.some((cs) => cs.toLowerCase() === s.toLowerCase());
+                      return (
+                        <span key={s} className={`text-[10px] px-2 py-0.5 rounded-full ${hasSkill ? "bg-primary/15 text-primary font-semibold" : "bg-secondary text-secondary-foreground"}`}>
+                          {s}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              </button>
+
+              {isExpanded && (
+                <div className="border-t border-border bg-background/50 px-4 py-3 space-y-3">
+                  <p className="text-xs text-muted-foreground leading-relaxed">{job.description}</p>
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                      <Clock className="h-3 w-3" /> Discovered {job.dateDiscovered}
+                    </span>
+                    <a href={job.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[10px] text-primary hover:underline" onClick={(e) => e.stopPropagation()}>
+                      <ExternalLink className="h-3 w-3" /> View full listing
+                    </a>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant={isAdded ? "outline" : "default"}
+                    disabled={isAdded}
+                    className="h-7 px-3 text-[11px] gap-1 rounded-full"
+                    onClick={() => handleAdd(job, job.score)}
+                  >
+                    {isAdded ? <><Check className="h-3 w-3" /> Added to Queue</> : <><Plus className="h-3 w-3" /> Add to Queue</>}
+                  </Button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default Candidates;
