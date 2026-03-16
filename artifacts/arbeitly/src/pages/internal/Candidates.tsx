@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -6,12 +6,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import RichTextEditor from "@/components/editor/RichTextEditor";
 import PdfExportDialog from "@/components/editor/PdfExportDialog";
 import AddJobDialog from "@/components/dialogs/AddJobDialog";
 import { useApplications } from "@/context/ApplicationsContext";
 import { statusLabels, statusColors as appStatusColors } from "@/data/applications";
-import type { Application } from "@/data/applications";
+import type { Application, ApplicationStatus } from "@/data/applications";
 import { useToast } from "@/hooks/use-toast";
 import {
   Search, User, Mail, Phone, Linkedin, MapPin, Calendar, Briefcase,
@@ -19,7 +21,22 @@ import {
   Globe, Star, Award, ChevronRight, Sparkles, Clock, Copy, Check,
   Wand2, Loader2, Save, ExternalLink, Image, Plus, Eye, EyeOff,
   KeyRound, Shield, Pencil, Zap, Building, ChevronDown, ChevronUp,
+  GripVertical, MoreHorizontal,
 } from "lucide-react";
+import {
+  DndContext,
+  DragOverlay,
+  closestCorners,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragStartEvent,
+  type DragEndEvent,
+  type DragOverEvent,
+} from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { useDroppable } from "@dnd-kit/core";
 import {
   type JobListing,
   seedJobs, computeScore, sourceBadgeColors, scoreColor, scoreBarColor,
@@ -981,95 +998,114 @@ const candidates: Candidate[] = [
   },
 ];
 
-// ─── ApplicationCard ──────────────────────────────────────────────────────────
+// ─── Candidate Kanban components ─────────────────────────────────────────────
 
-const ApplicationCard = ({ app }: { app: Application }) => (
-  <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
-    {/* Header row */}
-    <div className="flex items-start justify-between gap-3">
-      <div className="min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <p className="text-sm font-semibold text-foreground">{app.job}</p>
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${appStatusColors[app.status]}`}>
-            {statusLabels[app.status]}
-          </span>
-        </div>
-        <p className="text-xs text-muted-foreground mt-0.5">{app.company}</p>
+type KanbanColumnDef = { id: ApplicationStatus; title: string; color: string };
+
+const kanbanColumnDefs: KanbanColumnDef[] = [
+  { id: "to-apply", title: "To Apply", color: "bg-muted-foreground" },
+  { id: "applied", title: "Applied", color: "bg-info" },
+  { id: "interview", title: "Interview", color: "bg-warning" },
+  { id: "offer", title: "Offer", color: "bg-success" },
+  { id: "rejected", title: "Rejected", color: "bg-destructive" },
+];
+
+function MiniSortableCard({ card }: { card: Application }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: card.id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes}>
+      <Card className="cursor-grab active:cursor-grabbing hover:border-primary/40 transition-colors bg-card border-border">
+        <CardContent className="p-2.5">
+          <div className="flex items-start justify-between">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-card-foreground leading-snug truncate">{card.job}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{card.company}</p>
+            </div>
+            <div {...listeners} className="ml-1.5 mt-0.5 text-muted-foreground hover:text-foreground shrink-0">
+              <GripVertical className="h-3 w-3" />
+            </div>
+          </div>
+          {card.salaryExpectation && (
+            <p className="text-[9px] text-primary/70 mt-1 font-medium truncate">{card.salaryExpectation}</p>
+          )}
+          <div className="flex items-center justify-between mt-1.5">
+            <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">{card.cvVersion}</Badge>
+            <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground">
+              <Clock className="h-2.5 w-2.5" />
+              {card.date}
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function MiniCardOverlay({ card }: { card: Application }) {
+  return (
+    <Card className="cursor-grabbing shadow-xl border-primary/50 bg-card w-[160px]">
+      <CardContent className="p-2.5">
+        <p className="text-xs font-medium text-card-foreground truncate">{card.job}</p>
+        <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{card.company}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function MiniDroppableColumn({
+  column, cards, onAddClick,
+}: {
+  column: KanbanColumnDef; cards: Application[]; onAddClick: () => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: column.id });
+  const cardIds = cards.map((c) => c.id);
+
+  return (
+    <div className="w-[175px] flex flex-col shrink-0">
+      <div className="flex items-center gap-1.5 px-1.5 py-1.5 mb-1.5">
+        <span className={`h-1.5 w-1.5 rounded-full ${column.color}`} />
+        <span className="text-[10px] font-semibold text-foreground uppercase tracking-wider">{column.title}</span>
+        <span className="text-[10px] text-muted-foreground bg-secondary rounded-full px-1.5 py-0 min-w-[16px] text-center">
+          {cards.length}
+        </span>
       </div>
-      {app.jobUrl && (
-        <a
-          href={app.jobUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="shrink-0 flex items-center gap-1 text-[10px] text-primary hover:underline mt-0.5"
+      <div
+        ref={setNodeRef}
+        className={`flex-1 space-y-1.5 overflow-y-auto pb-1.5 min-h-[50px] rounded-lg transition-colors ${isOver ? "bg-primary/5 ring-1 ring-primary/20" : ""}`}
+      >
+        <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
+          {cards.map((card) => (
+            <MiniSortableCard key={card.id} card={card} />
+          ))}
+        </SortableContext>
+        <button
+          onClick={onAddClick}
+          className="w-full flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] text-muted-foreground hover:bg-secondary transition-colors"
         >
-          <ExternalLink className="h-3 w-3" /> View Job
-        </a>
-      )}
-    </div>
-
-    {/* Meta grid */}
-    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
-      {app.cvVersion && (
-        <div className="flex items-center gap-1.5 text-muted-foreground">
-          <FileText className="h-3 w-3 shrink-0" />
-          <span className="truncate">CV: <span className="text-foreground font-medium">{app.cvVersion}</span></span>
-        </div>
-      )}
-      {app.salaryExpectation && (
-        <div className="flex items-center gap-1.5 text-muted-foreground">
-          <Star className="h-3 w-3 shrink-0" />
-          <span className="truncate">Salary: <span className="text-foreground font-medium">{app.salaryExpectation}</span></span>
-        </div>
-      )}
-      {app.datePosted && (
-        <div className="flex items-center gap-1.5 text-muted-foreground">
-          <Calendar className="h-3 w-3 shrink-0" />
-          <span className="truncate">Posted: <span className="text-foreground font-medium">{app.datePosted}</span></span>
-        </div>
-      )}
-      {app.dateSubmitted && (
-        <div className="flex items-center gap-1.5 text-muted-foreground">
-          <CheckCircle className="h-3 w-3 shrink-0" />
-          <span className="truncate">Submitted: <span className="text-foreground font-medium">{app.dateSubmitted}</span></span>
-        </div>
-      )}
-    </div>
-
-    {/* Notes */}
-    {app.notes && (
-      <p className="text-xs text-muted-foreground bg-secondary/50 rounded-lg px-3 py-2 leading-relaxed">
-        {app.notes}
-      </p>
-    )}
-
-    {/* JD Screenshot */}
-    {app.jdScreenshot && (
-      <div className="flex items-center gap-2 pt-1">
-        <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-          <Image className="h-4 w-4 text-primary" />
-        </div>
-        <div>
-          <p className="text-[10px] font-medium text-foreground">JD Screenshot attached</p>
-          <p className="text-[10px] text-muted-foreground">Job description image uploaded</p>
-        </div>
-        <img
-          src={app.jdScreenshot}
-          alt="JD Screenshot"
-          className="ml-auto h-10 w-16 object-cover rounded-lg border border-border"
-        />
+          <Plus className="h-2.5 w-2.5" /> Add application
+        </button>
       </div>
-    )}
-  </div>
-);
+    </div>
+  );
+}
 
 // ─── Main component ────────────────────────────────────────────────────────────
 
 const Candidates = () => {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Candidate>(candidates[0]);
-  const { applications, addApplication } = useApplications();
+  const { applications, addApplication, moveCard } = useApplications();
   const { toast } = useToast();
+
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [quickAddStatus, setQuickAddStatus] = useState<ApplicationStatus>("to-apply");
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
 
   const [showPassword, setShowPassword] = useState(false);
   const [editAccount, setEditAccount] = useState(false);
@@ -1093,6 +1129,47 @@ const Candidates = () => {
 
   const candidateApplications = applications.filter((a) => a.candidate === selected.name);
   const allCandidateNames = candidates.map((c) => c.name);
+
+  const byStatus = useMemo(() => {
+    const map: Record<ApplicationStatus, Application[]> = {
+      "to-apply": [], applied: [], interview: [], offer: [], rejected: [],
+    };
+    for (const app of candidateApplications) {
+      map[app.status].push(app);
+    }
+    return map;
+  }, [candidateApplications]);
+
+  const findStatus = (cardId: string): ApplicationStatus | null => {
+    const app = applications.find((a) => a.id === cardId);
+    return app ? app.status : null;
+  };
+
+  const activeCard = useMemo(
+    () => applications.find((a) => a.id === activeId) ?? null,
+    [activeId, applications]
+  );
+
+  const handleDragStart = (event: DragStartEvent) => setActiveId(event.active.id as string);
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+    const activeStatus = findStatus(active.id as string);
+    const overStatus = (kanbanColumnDefs.find((c) => c.id === over.id)?.id ?? findStatus(over.id as string)) as ApplicationStatus | null;
+    if (!activeStatus || !overStatus || activeStatus === overStatus) return;
+    moveCard(active.id as string, overStatus, over.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+    if (!over) return;
+    const activeStatus = findStatus(active.id as string);
+    const overStatus = (kanbanColumnDefs.find((c) => c.id === over.id)?.id ?? findStatus(over.id as string)) as ApplicationStatus | null;
+    if (!activeStatus || !overStatus || activeStatus !== overStatus) return;
+    moveCard(active.id as string, overStatus, over.id as string);
+  };
 
   const usedPct = selected.applicationsTotal > 0
     ? Math.round((selected.applicationsUsed / selected.applicationsTotal) * 100)
@@ -1335,8 +1412,8 @@ const Candidates = () => {
             </TabsContent>
 
             {/* ── Applications ── */}
-            <TabsContent value="applications" className="flex-1 overflow-y-auto p-6 mt-0">
-              <div className="flex items-center justify-between mb-4">
+            <TabsContent value="applications" className="flex-1 overflow-hidden p-4 mt-0 flex flex-col">
+              <div className="flex items-center justify-between mb-3 shrink-0">
                 <div>
                   <h3 className="text-sm font-semibold text-foreground">
                     Job Applications
@@ -1360,7 +1437,7 @@ const Candidates = () => {
               </div>
 
               {candidateApplications.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="flex flex-col items-center justify-center py-16 text-center flex-1">
                   <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4">
                     <Briefcase className="h-7 w-7 text-primary/60" />
                   </div>
@@ -1368,12 +1445,44 @@ const Candidates = () => {
                   <p className="text-xs text-muted-foreground mt-1">Track job applications for {selected.name} using the button above.</p>
                 </div>
               ) : (
-                <div className="space-y-3 max-w-2xl">
-                  {candidateApplications.map((app) => (
-                    <ApplicationCard key={app.id} app={app} />
-                  ))}
-                </div>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCorners}
+                  onDragStart={handleDragStart}
+                  onDragOver={handleDragOver}
+                  onDragEnd={handleDragEnd}
+                >
+                  <div className="flex-1 overflow-x-auto">
+                    <div className="flex gap-2 h-full min-w-max">
+                      {kanbanColumnDefs.map((col) => (
+                        <MiniDroppableColumn
+                          key={col.id}
+                          column={col}
+                          cards={byStatus[col.id]}
+                          onAddClick={() => { setQuickAddStatus(col.id); setQuickAddOpen(true); }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <DragOverlay>
+                    {activeCard ? <MiniCardOverlay card={activeCard} /> : null}
+                  </DragOverlay>
+                </DndContext>
               )}
+
+              <AddJobDialog
+                key={quickAddStatus}
+                open={quickAddOpen}
+                onOpenChange={setQuickAddOpen}
+                onAdd={(app) => {
+                  addApplication({ ...app, candidate: selected.name });
+                  toast({ title: "Application Added", description: `${app.job} at ${app.company}` });
+                }}
+                candidates={allCandidateNames}
+                defaultCandidate={selected.name}
+                defaultStatus={quickAddStatus}
+                trigger={<span className="hidden" />}
+              />
             </TabsContent>
 
             {/* ── Account ── */}
