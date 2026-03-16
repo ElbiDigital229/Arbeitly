@@ -1491,7 +1491,7 @@ const Candidates = () => {
             </TabsContent>
 
             {/* ── Account ── */}
-            <TabsContent value="account" className="flex-1 overflow-y-auto p-6 mt-0">
+            <TabsContent value="account" className="flex-1 overflow-y-auto px-6 pb-6 mt-0">
               <div className="max-w-lg space-y-5">
                 <div className="flex items-center justify-between">
                   <div>
@@ -1613,7 +1613,7 @@ const Candidates = () => {
             </TabsContent>
 
             {/* ── Job Discovery ── */}
-            <TabsContent value="job-discovery" className="flex-1 overflow-y-auto p-6 mt-0">
+            <TabsContent value="job-discovery" className="flex-1 overflow-y-auto px-6 pb-6 mt-0">
               <CandidateJobDiscovery candidate={selected} />
             </TabsContent>
           </Tabs>
