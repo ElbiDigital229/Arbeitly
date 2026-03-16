@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,11 +12,13 @@ import AddJobDialog from "@/components/dialogs/AddJobDialog";
 import { useApplications } from "@/context/ApplicationsContext";
 import { statusLabels, statusColors as appStatusColors } from "@/data/applications";
 import type { Application } from "@/data/applications";
+import { useToast } from "@/hooks/use-toast";
 import {
   Search, User, Mail, Phone, Linkedin, MapPin, Calendar, Briefcase,
   GraduationCap, Target, FileText, Download, CheckCircle, AlertCircle,
   Globe, Star, Award, ChevronRight, Sparkles, Clock, Copy, Check,
-  Wand2, Loader2, Save, ExternalLink, Image, Plus,
+  Wand2, Loader2, Save, ExternalLink, Image, Plus, Eye, EyeOff,
+  KeyRound, Shield, Pencil,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -45,6 +47,7 @@ type Candidate = {
   salaryRange: string; targetCompanies: string; germanLevel: string;
   drivingLicense: string; hearAboutUs: string; additionalNotes: string;
   hasCv: boolean; hasCoverLetter: boolean;
+  appEmail: string; appEmailPassword: string; appEmailNotes: string;
 };
 
 // ─── Mock document versions ───────────────────────────────────────────────────
@@ -879,6 +882,7 @@ const candidates: Candidate[] = [
     targetCompanies: "Spotify, N26, Personio", germanLevel: "C1 – Advanced",
     drivingLicense: "Yes", hearAboutUs: "LinkedIn", additionalNotes: "Open to hybrid roles. Not interested in agencies.",
     hasCv: true, hasCoverLetter: true,
+    appEmail: "anna.schmidt.apply@gmail.com", appEmailPassword: "Arb3itly!2026#AS", appEmailNotes: "Created 2026-02-16. 2FA disabled. Recovery: anna.schmidt@example.com",
   },
   {
     id: "2", name: "Thomas Wagner", initials: "TW", email: "t.wagner@example.com", phone: "+49 176 9876543",
@@ -896,6 +900,7 @@ const candidates: Candidate[] = [
     targetCompanies: "McKinsey, Siemens, SAP", germanLevel: "C2 – Proficient / Native",
     drivingLicense: "Yes", hearAboutUs: "Google / Search", additionalNotes: "",
     hasCv: true, hasCoverLetter: false,
+    appEmail: "thomas.wagner.jobs@gmail.com", appEmailPassword: "Arb3itly!2026#TW", appEmailNotes: "Created 2026-02-21. Password changed once. Recovery linked to t.wagner@example.com",
   },
   {
     id: "3", name: "Lisa Müller", initials: "LM", email: "lisa.mueller@example.com", phone: "+49 151 5554321",
@@ -913,6 +918,7 @@ const candidates: Candidate[] = [
     targetCompanies: "Stripe, Adyen, Celonis", germanLevel: "C2 – Proficient / Native",
     drivingLicense: "No", hearAboutUs: "LinkedIn", additionalNotes: "Prefers fully remote. Strong preference for international teams.",
     hasCv: true, hasCoverLetter: true,
+    appEmail: "lisa.mueller.apply@gmail.com", appEmailPassword: "Arb3itly!2026#LM", appEmailNotes: "Created 2026-01-12. Recovery: lisa.mueller@example.com",
   },
   {
     id: "4", name: "Peter Fischer", initials: "PF", email: "p.fischer@example.com", phone: "+49 172 3456789",
@@ -930,6 +936,7 @@ const candidates: Candidate[] = [
     targetCompanies: "Amazon, Google, Klarna", germanLevel: "C2 – Proficient / Native",
     drivingLicense: "Yes", hearAboutUs: "Friend / Referral", additionalNotes: "Looking for executive track only.",
     hasCv: true, hasCoverLetter: true,
+    appEmail: "peter.fischer.apply@gmail.com", appEmailPassword: "Arb3itly!2026#PF", appEmailNotes: "Created 2026-01-06. Uses phone 2FA. Recovery: p.fischer@example.com",
   },
   {
     id: "5", name: "Maria Becker", initials: "MB", email: "maria.becker@example.com", phone: "+49 163 8765432",
@@ -948,6 +955,7 @@ const candidates: Candidate[] = [
     targetCompanies: "About You, Rewe, Bertelsmann", germanLevel: "C2 – Proficient / Native",
     drivingLicense: "Yes", hearAboutUs: "Instagram", additionalNotes: "",
     hasCv: true, hasCoverLetter: false,
+    appEmail: "maria.becker.apply@gmail.com", appEmailPassword: "Arb3itly!2026#MB", appEmailNotes: "Created 2026-03-08. No 2FA set yet. Recovery: maria.becker@example.com",
   },
   {
     id: "6", name: "Hans Schulz", initials: "HS", email: "hans.schulz@example.com", phone: "+49 179 2345678",
@@ -965,6 +973,7 @@ const candidates: Candidate[] = [
     targetCompanies: "Bosch, BASF, Bayer", germanLevel: "C2 – Proficient / Native",
     drivingLicense: "Yes", hearAboutUs: "Job Board", additionalNotes: "Pause requested due to personal reasons.",
     hasCv: true, hasCoverLetter: true,
+    appEmail: "hans.schulz.apply@gmail.com", appEmailPassword: "Arb3itly!2026#HS", appEmailNotes: "Created 2025-12-03. Account inactive — candidate on pause.",
   },
 ];
 
@@ -1056,6 +1065,21 @@ const Candidates = () => {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Candidate>(candidates[0]);
   const { applications, addApplication } = useApplications();
+  const { toast } = useToast();
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [editAccount, setEditAccount] = useState(false);
+  const [accountEmail, setAccountEmail] = useState(selected.appEmail);
+  const [accountPassword, setAccountPassword] = useState(selected.appEmailPassword);
+  const [accountNotes, setAccountNotes] = useState(selected.appEmailNotes);
+
+  useEffect(() => {
+    setShowPassword(false);
+    setEditAccount(false);
+    setAccountEmail(selected.appEmail);
+    setAccountPassword(selected.appEmailPassword);
+    setAccountNotes(selected.appEmailNotes);
+  }, [selected.id]);
 
   const filtered = candidates.filter(
     (c) =>
@@ -1178,6 +1202,7 @@ const Candidates = () => {
                 <TabsTrigger value="cv" className="gap-1.5 text-xs h-7"><FileText className="h-3.5 w-3.5" />CV</TabsTrigger>
                 <TabsTrigger value="cover-letter" className="gap-1.5 text-xs h-7"><Sparkles className="h-3.5 w-3.5" />Cover Letter</TabsTrigger>
                 <TabsTrigger value="documents" className="gap-1.5 text-xs h-7"><Download className="h-3.5 w-3.5" />Files</TabsTrigger>
+                <TabsTrigger value="account" className="gap-1.5 text-xs h-7"><Shield className="h-3.5 w-3.5" />Account</TabsTrigger>
               </TabsList>
             </div>
 
@@ -1344,6 +1369,128 @@ const Candidates = () => {
                   ))}
                 </div>
               )}
+            </TabsContent>
+
+            {/* ── Account ── */}
+            <TabsContent value="account" className="flex-1 overflow-y-auto p-6 mt-0">
+              <div className="max-w-lg space-y-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">Application Account</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Email account used to apply on behalf of {selected.name}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 h-8 rounded-full text-xs"
+                    onClick={() => {
+                      if (editAccount) toast({ title: "Account updated", description: "Credentials saved." });
+                      setEditAccount(!editAccount);
+                    }}
+                  >
+                    {editAccount
+                      ? <><Check className="h-3.5 w-3.5" /> Save</>
+                      : <><Pencil className="h-3.5 w-3.5" /> Edit</>}
+                  </Button>
+                </div>
+
+                {/* Credentials card */}
+                <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Login Credentials</p>
+
+                  {/* Email */}
+                  <div className="space-y-1.5">
+                    <p className="text-xs text-muted-foreground">Email Address</p>
+                    {editAccount ? (
+                      <Input
+                        value={accountEmail}
+                        onChange={(e) => setAccountEmail(e.target.value)}
+                        className="h-8 text-sm font-mono"
+                      />
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 flex items-center gap-2.5 bg-secondary rounded-xl px-3 py-2">
+                          <Mail className="h-3.5 w-3.5 text-primary shrink-0" />
+                          <span className="text-sm font-mono text-foreground">{accountEmail}</span>
+                        </div>
+                        <Button
+                          variant="ghost" size="icon" className="h-8 w-8 shrink-0"
+                          onClick={() => {
+                            navigator.clipboard.writeText(accountEmail);
+                            toast({ title: "Copied", description: "Email copied to clipboard" });
+                          }}
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Password */}
+                  <div className="space-y-1.5">
+                    <p className="text-xs text-muted-foreground">Password</p>
+                    {editAccount ? (
+                      <Input
+                        value={accountPassword}
+                        onChange={(e) => setAccountPassword(e.target.value)}
+                        className="h-8 text-sm font-mono"
+                        placeholder="New password"
+                      />
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 flex items-center gap-2.5 bg-secondary rounded-xl px-3 py-2">
+                          <KeyRound className="h-3.5 w-3.5 text-primary shrink-0" />
+                          <span className="text-sm font-mono text-foreground tracking-wider">
+                            {showPassword ? accountPassword : "•".repeat(Math.min(accountPassword.length, 18))}
+                          </span>
+                        </div>
+                        <Button
+                          variant="ghost" size="icon" className="h-8 w-8 shrink-0"
+                          onClick={() => setShowPassword((p) => !p)}
+                        >
+                          {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                        </Button>
+                        <Button
+                          variant="ghost" size="icon" className="h-8 w-8 shrink-0"
+                          onClick={() => {
+                            navigator.clipboard.writeText(accountPassword);
+                            toast({ title: "Copied", description: "Password copied to clipboard" });
+                          }}
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Notes card */}
+                <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Account Notes</p>
+                  {editAccount ? (
+                    <Textarea
+                      value={accountNotes}
+                      onChange={(e) => setAccountNotes(e.target.value)}
+                      className="text-sm resize-none min-h-[80px]"
+                      placeholder="e.g. Created date, 2FA status, recovery email..."
+                    />
+                  ) : (
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {accountNotes || <span className="italic">No notes added.</span>}
+                    </p>
+                  )}
+                </div>
+
+                {/* Security reminder */}
+                <div className="flex items-start gap-3 rounded-2xl border border-warning/30 bg-warning/5 p-4">
+                  <Shield className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    These credentials are stored for internal transparency only. Access is restricted to authorised Arbeitly staff. Do not share outside the team.
+                  </p>
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
         </motion.div>
