@@ -1,0 +1,34 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Arbeitly Frontend",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["pnpm", "--filter", "@workspace/arbeitly", "run", "dev"],
+      "port": 5173,
+      "env": {
+        "PORT": "5173",
+        "BASE_PATH": "/"
+      }
+    },
+    {
+      "name": "API Server",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["pnpm", "--filter", "@workspace/api-server", "run", "dev"],
+      "port": 3000,
+      "env": {
+        "PORT": "3000"
+      }
+    },
+    {
+      "name": "Mockup Sandbox",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["pnpm", "--filter", "@workspace/mockup-sandbox", "run", "dev"],
+      "port": 5174,
+      "env": {
+        "PORT": "5174",
+        "BASE_PATH": "/"
+      }
+    }
+  ]
+}
