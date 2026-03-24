@@ -46,7 +46,7 @@ const HeroSection = () => {
           className="mt-10 flex flex-wrap justify-center gap-4"
         >
           <Button variant="hero" size="xl" asChild>
-            <Link to="/register">
+            <Link to="/register?plan=free">
               Get Started
               <ArrowRight className="ml-1 h-5 w-5" />
             </Link>

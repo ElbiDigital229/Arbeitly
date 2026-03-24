@@ -5,16 +5,32 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, ArrowLeft } from "lucide-react";
 import logo from "@/assets/logo.png";
+import { useEmployees } from "@/context/EmployeesContext";
 
 const EmployeeLogin = () => {
   const navigate = useNavigate();
+  const { loginEmployee, loginEmployeeDirect, employees } = useEmployees();
   const [form, setForm] = useState({ email: "", password: "" });
+  const [error, setError] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate("/employee/portal");
+    setError("");
+    const emp = loginEmployee(form.email, form.password);
+    if (emp) {
+      navigate("/employee/internal");
+    } else {
+      setError("Invalid email or password, or account is inactive.");
+    }
+  };
+
+  const handleGuest = () => {
+    // Log in as first active employee for guest/demo access, or navigate without session
+    const active = employees.find((e) => e.status === "active");
+    if (active) loginEmployeeDirect(active);
+    navigate("/employee/internal");
   };
 
   return (
@@ -47,12 +63,24 @@ const EmployeeLogin = () => {
           transition={{ duration: 0.5 }}
           className="w-full max-w-sm"
         >
-          <Link to="/" className="flex items-center gap-2 mb-8">
-            <img src={logo} alt="Arbeitly" className="h-8" />
-          </Link>
+          <div className="flex items-center justify-between mb-8">
+            <Link to="/" className="flex items-center gap-2">
+              <img src={logo} alt="Arbeitly" className="h-8" />
+            </Link>
+            <Link to="/" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft className="h-3.5 w-3.5" />
+              Back
+            </Link>
+          </div>
 
           <h1 className="font-display text-2xl font-bold text-foreground">Employee Sign In</h1>
           <p className="mt-1 text-sm text-muted-foreground">Access the internal operations portal</p>
+
+          {error && (
+            <div className="mt-4 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
+              {error}
+            </div>
+          )}
 
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
             <div>
@@ -64,6 +92,7 @@ const EmployeeLogin = () => {
                 className="mt-1.5"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
+                required
               />
             </div>
             <div>
@@ -75,6 +104,7 @@ const EmployeeLogin = () => {
                 className="mt-1.5"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
+                required
               />
             </div>
             <Button className="w-full rounded-full" type="submit">
@@ -92,15 +122,20 @@ const EmployeeLogin = () => {
             variant="outline"
             className="w-full rounded-full"
             type="button"
-            onClick={() => navigate("/employee/portal")}
+            onClick={handleGuest}
           >
             Continue as Guest
           </Button>
 
-          <p className="mt-6 text-center text-xs text-muted-foreground">
-            Not an employee?{" "}
-            <Link to="/" className="text-primary hover:underline">Back to homepage</Link>
-          </p>
+          <div className="mt-6 pt-5 border-t border-border text-center">
+            <p className="text-[11px] text-muted-foreground/60 mb-2 uppercase tracking-widest font-medium">Developer Reference</p>
+            <Link
+              to="/old-portal"
+              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
+            >
+              <span>📁</span> Browse Old Portal Files
+            </Link>
+          </div>
         </motion.div>
       </div>
     </div>

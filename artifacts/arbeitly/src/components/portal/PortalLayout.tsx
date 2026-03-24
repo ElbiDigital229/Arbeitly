@@ -5,29 +5,51 @@ import { Bell, Search, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useEmployees } from "@/context/EmployeesContext";
 
-const fullBleedRoutes = ["/employee/portal"];
+const fullBleedRoutes = ["/employee/portal", "/old-portal"];
 
 const pageTitles: Record<string, string> = {
   "/employee/portal": "Board",
   "/employee/applications": "Applications",
   "/employee/documents": "Documents",
   "/employee/upload": "Upload CV",
+  "/employee/cover-letter": "Cover Letter",
   "/employee/analytics": "Analytics",
   "/employee/settings": "Settings",
   "/employee/internal": "Operations",
-  "/employee/internal/candidates": "Candidates",
+  "/employee/internal/candidates": "My Candidates",
   "/employee/internal/jobs": "Job Discovery",
   "/employee/admin": "Admin Overview",
   "/employee/admin/cv-prompts": "CV Prompts",
   "/employee/admin/cl-prompts": "Cover Letter Prompts",
   "/employee/admin/ai-settings": "AI Settings",
+  "/old-portal": "Board",
+  "/old-portal/applications": "Applications",
+  "/old-portal/documents": "Documents",
+  "/old-portal/upload": "Upload CV",
+  "/old-portal/cover-letter": "Cover Letter",
+  "/old-portal/analytics": "Analytics",
+  "/old-portal/settings": "Settings",
+  "/old-portal/internal": "Operations",
+  "/old-portal/internal/candidates": "Candidates",
+  "/old-portal/internal/jobs": "Job Discovery",
+  "/old-portal/admin": "Admin Overview",
+  "/old-portal/admin/cv-prompts": "CV Prompts",
+  "/old-portal/admin/cl-prompts": "Cover Letter Prompts",
+  "/old-portal/admin/ai-settings": "AI Settings",
 };
 
 const PortalLayout = () => {
   const location = useLocation();
-  const title = pageTitles[location.pathname] || "Portal";
+  const { currentEmployee } = useEmployees();
+  const title =
+    pageTitles[location.pathname] ||
+    (location.pathname.startsWith("/employee/portal/candidates/") ? "Candidate Detail" : "Portal");
   const isFullBleed = fullBleedRoutes.includes(location.pathname);
+  const initials = currentEmployee
+    ? currentEmployee.fullName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
+    : "EM";
 
   return (
     <SidebarProvider>
@@ -56,7 +78,7 @@ const PortalLayout = () => {
               </Button>
               <Avatar className="h-7 w-7 ml-1">
                 <AvatarFallback className="text-[10px] bg-primary text-primary-foreground font-bold">
-                  MM
+                  {initials}
                 </AvatarFallback>
               </Avatar>
             </div>

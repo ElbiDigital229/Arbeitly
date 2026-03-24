@@ -1,42 +1,33 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { UserCircle, ArrowLeft } from "lucide-react";
+import { Shield, ArrowLeft } from "lucide-react";
 import logo from "@/assets/logo.png";
-import { useCustomers } from "@/context/CustomersContext";
 
-const CandidateLogin = () => {
+const ADMIN_EMAIL = "admin@arbeitly.de";
+const ADMIN_PASSWORD = "admin2024";
+
+const SuperAdminLogin = () => {
   const navigate = useNavigate();
-  const { login } = useCustomers();
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD });
   const [error, setError] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-
-    // Check against website-registered customers
-    const customer = login(form.email, form.password);
-    if (customer) {
-      navigate("/candidate/applications");
-      return;
+    if (form.email === ADMIN_EMAIL && form.password === ADMIN_PASSWORD) {
+      localStorage.setItem("arbeitly_superadmin_auth", "true");
+      navigate("/superadmin");
+    } else {
+      setError("Invalid credentials.");
     }
-
-    // Demo fallback for internal testing
-    if (form.email === "anna.schmidt@email.com" && form.password === "password123") {
-      navigate("/candidate/applications");
-      return;
-    }
-
-    setError("Invalid email or password. Please try again.");
   };
 
   return (
     <div className="min-h-screen flex">
+      {/* Left panel */}
       <div className="hidden lg:flex lg:w-1/2 bg-hero-radial items-center justify-center p-12">
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -44,18 +35,27 @@ const CandidateLogin = () => {
           transition={{ duration: 0.6 }}
           className="max-w-md text-center"
         >
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 mb-6">
-            <UserCircle className="h-7 w-7 text-primary" />
+          <div className="flex justify-center mb-6">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 border border-primary/20">
+              <Shield className="h-8 w-8 text-primary" />
+            </div>
           </div>
           <h2 className="font-display text-4xl font-bold text-foreground">
-            Candidate Portal
+            Super Admin Access
           </h2>
           <p className="mt-4 text-muted-foreground text-lg">
-            Track your applications, manage documents, and monitor your job search progress.
+            Manage pricing plans, customers, and platform configuration.
           </p>
+          <div className="mt-8 rounded-2xl border border-border bg-card/60 backdrop-blur p-5 text-left space-y-2 text-sm text-muted-foreground">
+            <p>• Manage pricing plans</p>
+            <p>• View all registered customers</p>
+            <p>• Configure AI settings & prompts</p>
+            <p>• Monitor platform activity</p>
+          </div>
         </motion.div>
       </div>
 
+      {/* Right panel */}
       <div className="flex-1 flex items-center justify-center p-6 bg-background">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -66,6 +66,9 @@ const CandidateLogin = () => {
           <div className="flex items-center justify-between mb-8">
             <Link to="/" className="flex items-center gap-2">
               <img src={logo} alt="Arbeitly" className="h-8" />
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+                Super Admin
+              </span>
             </Link>
             <Link to="/" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft className="h-3.5 w-3.5" />
@@ -73,8 +76,8 @@ const CandidateLogin = () => {
             </Link>
           </div>
 
-          <h1 className="font-display text-2xl font-bold text-foreground">Candidate Sign In</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Access your application portal</p>
+          <h1 className="font-display text-2xl font-bold text-foreground">Admin Sign In</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Restricted access — authorised personnel only</p>
 
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
             <div>
@@ -82,7 +85,6 @@ const CandidateLogin = () => {
               <Input
                 id="email"
                 type="email"
-                placeholder="you@example.com"
                 className="mt-1.5"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -94,7 +96,6 @@ const CandidateLogin = () => {
               <Input
                 id="password"
                 type="password"
-                placeholder="••••••••"
                 className="mt-1.5"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
@@ -102,40 +103,15 @@ const CandidateLogin = () => {
               />
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button className="w-full rounded-full" type="submit">
-              Sign In to Portal
+            <Button className="w-full rounded-full mt-2" type="submit">
+              <Shield className="h-4 w-4 mr-2" />
+              Sign In to Admin Panel
             </Button>
           </form>
-
-          <div className="my-5 flex items-center gap-3">
-            <Separator className="flex-1" />
-            <span className="text-xs text-muted-foreground">or</span>
-            <Separator className="flex-1" />
-          </div>
-
-          <p className="text-right -mt-2">
-            <Link to="/candidate/forgot-password" className="text-xs text-primary hover:underline">
-              Forgot password?
-            </Link>
-          </p>
-
-          <Button
-            variant="outline"
-            className="w-full rounded-full"
-            type="button"
-            onClick={() => navigate("/candidate/applications")}
-          >
-            Continue as Guest
-          </Button>
-
-          <p className="mt-6 text-center text-xs text-muted-foreground">
-            New customer?{" "}
-            <Link to="/pricing" className="text-primary hover:underline">Choose a plan</Link>
-          </p>
         </motion.div>
       </div>
     </div>
   );
 };
 
-export default CandidateLogin;
+export default SuperAdminLogin;

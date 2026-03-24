@@ -1,17 +1,8 @@
 import {
   LayoutDashboard,
-  FileText,
-  Briefcase,
-  BarChart3,
+  Users,
   Settings,
   LogOut,
-  Upload,
-  Users,
-  Search,
-  Shield,
-  Wand2,
-  PenTool,
-  Columns3,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -20,7 +11,6 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -30,33 +20,17 @@ import {
 } from "@/components/ui/sidebar";
 import logo from "@/assets/logo.png";
 
-const customerItems = [
-  { title: "Board", url: "/employee/portal", icon: Columns3 },
-  { title: "Applications", url: "/employee/applications", icon: Briefcase },
-  { title: "Documents", url: "/employee/documents", icon: FileText },
-  { title: "Upload CV", url: "/employee/upload", icon: Upload },
-  { title: "Cover Letter", url: "/employee/cover-letter", icon: PenTool },
-  { title: "Analytics", url: "/employee/analytics", icon: BarChart3 },
-];
-
-const internalItems = [
-  { title: "Operations", url: "/employee/internal", icon: LayoutDashboard },
+const navItems = [
+  { title: "Overview", url: "/employee/internal", icon: LayoutDashboard },
   { title: "Candidates", url: "/employee/internal/candidates", icon: Users },
-  { title: "Job Discovery", url: "/employee/internal/jobs", icon: Search },
-];
-
-const adminItems = [
-  { title: "Admin", url: "/employee/admin", icon: Shield },
-  { title: "CV Prompts", url: "/employee/admin/cv-prompts", icon: FileText },
-  { title: "CL Prompts", url: "/employee/admin/cl-prompts", icon: PenTool },
-  { title: "AI Settings", url: "/employee/admin/ai-settings", icon: Wand2 },
 ];
 
 export function PortalSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
-  const isActive = (path: string) => location.pathname === path;
+
+  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + "/");
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
@@ -73,46 +47,9 @@ export function PortalSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-[10px] uppercase tracking-wider">Your Work</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {customerItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                    <NavLink to={item.url} end>
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-[10px] uppercase tracking-wider">Internal</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {internalItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                    <NavLink to={item.url} end>
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-[10px] uppercase tracking-wider">Administration</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {adminItems.map((item) => (
+              {navItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)}>
                     <NavLink to={item.url} end>

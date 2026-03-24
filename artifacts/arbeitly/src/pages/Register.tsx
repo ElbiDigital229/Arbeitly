@@ -6,39 +6,50 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Check } from "lucide-react";
 import logo from "@/assets/logo.png";
-
-const planDetails: Record<string, { displayPrice: string; features: string[] }> = {
-  basic: {
-    displayPrice: "€299 one-time",
-    features: ["200 Job applications", "Expert CV/CL Review", "Standard Resume", "Standard Cover Letters", "1 Human Assistant"],
-  },
-  standard: {
-    displayPrice: "€399 one-time",
-    features: ["300 Job applications", "Expert CV/CL Review", "Standard Resume", "Standard Cover Letters", "1 Human Assistant"],
-  },
-  premium: {
-    displayPrice: "€499 one-time",
-    features: ["400 Job applications", "Expert CV/CL Review", "Standard Resume", "Standard Cover Letters", "1 Human Assistant"],
-  },
-  ultimate: {
-    displayPrice: "€499 + 8.5% success fee",
-    features: ["Tailored Job Applications", "Expert CV/CL Review (2)", "Custom Resume per application", "Custom Cover Letters", "1 Human Assistant", "LinkedIn Makeover (2)"],
-  },
-};
+import { usePricing } from "@/context/PricingContext";
+import { useCustomers } from "@/context/CustomersContext";
 
 const Register = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { plans } = usePricing();
+  const { addCustomer, loginDirect } = useCustomers();
+
   const planParam = searchParams.get("plan") || "premium";
-  const plan = planDetails[planParam] ?? planDetails.premium;
-  const planName = planParam.charAt(0).toUpperCase() + planParam.slice(1);
+  const plan = plans.find((p) => p.id === planParam) ?? plans[0];
+  const planName = plan?.name ?? planParam;
+  const isFree = plan?.free === true;
 
   const [form, setForm] = useState({ fullName: "", email: "", password: "", confirmPassword: "" });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate(`/payment?plan=${planParam}`);
+
+    if (isFree) {
+      // Free plan: create account immediately, skip payment
+      const newCustomer = addCustomer({
+        fullName: form.fullName,
+        email: form.email,
+        password: form.password,
+        planId: plan.id,
+        planName: plan.name,
+        planPrice: plan.price,
+        planType: "free",
+        status: "active",
+      });
+      loginDirect(newCustomer);
+      navigate("/onboarding/simple");
+    } else {
+      // Paid plan: save to sessionStorage and go to payment
+      sessionStorage.setItem(
+        "arbeitly_register",
+        JSON.stringify({ fullName: form.fullName, email: form.email, password: form.password }),
+      );
+      navigate(`/payment?plan=${planParam}`);
+    }
   };
+
+  if (!plan) return null;
 
   return (
     <div className="min-h-screen flex">
@@ -51,28 +62,35 @@ const Register = () => {
           className="max-w-md w-full"
         >
           <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-6">
-            Step 1 of 3 — Create Account
+            {isFree ? "Step 1 of 2 — Create Account" : "Step 1 of 3 — Create Account"}
           </p>
           <h2 className="font-display text-4xl font-bold text-foreground">
             You've chosen the{" "}
             <span className="text-gradient">{planName}</span> plan
           </h2>
           <p className="mt-4 text-muted-foreground text-lg">
-            Create your account to continue. Payment details come next.
+            {isFree
+              ? "Create your account and start tracking your job search for free."
+              : "Create your account to continue. Payment details come next."}
           </p>
 
           <div className="mt-8 rounded-2xl border border-border bg-card/60 backdrop-blur p-6">
             <div className="flex items-baseline justify-between mb-4">
               <span className="font-display text-lg font-bold text-card-foreground">{planName}</span>
-              <span className="font-display text-sm font-bold text-primary">{plan.displayPrice}</span>
+              <span className="font-display text-sm font-bold text-primary">
+                {plan.displayPrice || plan.price}
+                {plan.priceSuffix ? ` ${plan.priceSuffix}` : ""}
+              </span>
             </div>
             <ul className="space-y-2">
-              {plan.features.map((f) => (
-                <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Check className="h-4 w-4 text-primary shrink-0" />
-                  {f}
-                </li>
-              ))}
+              {plan.features
+                .filter((f) => f.included)
+                .map((f) => (
+                  <li key={f.text} className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Check className="h-4 w-4 text-primary shrink-0" />
+                    {f.text}
+                  </li>
+                ))}
             </ul>
           </div>
         </motion.div>
@@ -96,25 +114,54 @@ const Register = () => {
           <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
             <div>
               <Label htmlFor="fullName">Full Name</Label>
-              <Input id="fullName" placeholder="Max Müller" className="mt-1.5" value={form.fullName}
-                onChange={(e) => setForm({ ...form, fullName: e.target.value })} required />
+              <Input
+                id="fullName"
+                placeholder="Max Müller"
+                className="mt-1.5"
+                value={form.fullName}
+                onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+                required
+              />
             </div>
             <div>
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="you@example.com" className="mt-1.5" value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })} required />
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                className="mt-1.5"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                required
+              />
             </div>
             <div>
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" placeholder="••••••••" className="mt-1.5" value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })} required />
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                className="mt-1.5"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                required
+              />
             </div>
             <div>
               <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input id="confirmPassword" type="password" placeholder="••••••••" className="mt-1.5" value={form.confirmPassword}
-                onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} required />
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="••••••••"
+                className="mt-1.5"
+                value={form.confirmPassword}
+                onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                required
+              />
             </div>
-            <Button className="w-full rounded-full mt-2" type="submit">Continue to Payment</Button>
+            <Button className="w-full rounded-full mt-2" type="submit">
+              {isFree ? "Create Free Account" : "Continue to Payment"}
+            </Button>
           </form>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">

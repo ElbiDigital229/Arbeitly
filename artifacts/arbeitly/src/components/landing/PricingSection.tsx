@@ -2,80 +2,11 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Check, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
-export const plans = [
-  {
-    id: "basic",
-    name: "Basic",
-    price: "€299",
-    priceSuffix: "",
-    billing: "one time payment",
-    applications: 200,
-    popular: false,
-    features: [
-      { text: "200 Job applications", included: true },
-      { text: "Expert Resume / Cover Letter Review (1,2)", included: true },
-      { text: "Standard Resume*", included: true },
-      { text: "Standard Cover Letters*", included: true },
-      { text: "1 Human Assistant", included: true },
-      { text: "LinkedIn Makeover", included: false },
-    ],
-  },
-  {
-    id: "standard",
-    name: "Standard",
-    price: "€399",
-    priceSuffix: "",
-    billing: "one time payment",
-    applications: 300,
-    popular: false,
-    features: [
-      { text: "300 Job applications", included: true },
-      { text: "Expert Resume / Cover Letter Review (1,2)", included: true },
-      { text: "Standard Resume*", included: true },
-      { text: "Standard Cover Letters*", included: true },
-      { text: "1 Human Assistant", included: true },
-      { text: "LinkedIn Makeover", included: false },
-    ],
-  },
-  {
-    id: "premium",
-    name: "Premium",
-    price: "€499",
-    priceSuffix: "",
-    billing: "one time payment",
-    applications: 400,
-    popular: true,
-    features: [
-      { text: "400 Job applications", included: true },
-      { text: "Expert Resume / Cover Letter Review (1,2)", included: true },
-      { text: "Standard Resume*", included: true },
-      { text: "Standard Cover Letters*", included: true },
-      { text: "1 Human Assistant", included: true },
-      { text: "LinkedIn Makeover", included: false },
-    ],
-  },
-  {
-    id: "ultimate",
-    name: "Ultimate",
-    price: "€499",
-    priceSuffix: "+ 8.5% SUCCESS FEE",
-    billing: "one time payment",
-    applications: 0,
-    popular: false,
-    features: [
-      { text: "Tailored Job Applications", included: true },
-      { text: "Expert Resume / Cover Letter Review (2)", included: true },
-      { text: "Custom Resume for every application", included: true },
-      { text: "Custom Cover Letters for every application", included: true },
-      { text: "1 Human Assistant", included: true },
-      { text: "LinkedIn Makeover (2)", included: true },
-    ],
-  },
-];
+import { usePricing } from "@/context/PricingContext";
 
 const PricingSection = () => {
   const navigate = useNavigate();
+  const { plans } = usePricing();
 
   return (
     <section id="pricing" className="py-24 bg-background">

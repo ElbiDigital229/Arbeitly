@@ -6,39 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Check, Lock, ShieldCheck, RotateCcw, CreditCard } from "lucide-react";
 import logo from "@/assets/logo.png";
-
-const planDetails: Record<string, {
-  displayName: string; price: string; totalLabel: string; billing: string; features: string[];
-}> = {
-  basic: {
-    displayName: "Basic",
-    price: "€299",
-    totalLabel: "€299.00",
-    billing: "one-time payment",
-    features: ["200 Job applications", "Expert CV/CL Review", "Standard Resume", "Standard Cover Letters", "1 Human Assistant"],
-  },
-  standard: {
-    displayName: "Standard",
-    price: "€399",
-    totalLabel: "€399.00",
-    billing: "one-time payment",
-    features: ["300 Job applications", "Expert CV/CL Review", "Standard Resume", "Standard Cover Letters", "1 Human Assistant"],
-  },
-  premium: {
-    displayName: "Premium",
-    price: "€499",
-    totalLabel: "€499.00",
-    billing: "one-time payment",
-    features: ["400 Job applications", "Expert CV/CL Review", "Standard Resume", "Standard Cover Letters", "1 Human Assistant"],
-  },
-  ultimate: {
-    displayName: "Ultimate",
-    price: "€499",
-    totalLabel: "€499 + 8.5% success fee",
-    billing: "one-time payment",
-    features: ["Tailored Job Applications", "Expert CV/CL Review (2)", "Custom Resume per application", "Custom Cover Letters", "1 Human Assistant", "LinkedIn Makeover (2)"],
-  },
-};
+import { usePricing } from "@/context/PricingContext";
+import { useCustomers } from "@/context/CustomersContext";
 
 const trustBadges = [
   { icon: Lock, label: "256-bit SSL encryption" },
@@ -49,8 +18,11 @@ const trustBadges = [
 const Payment = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { plans } = usePricing();
+  const { addCustomer, loginDirect, currentCustomer, updateCustomer } = useCustomers();
+
   const planParam = searchParams.get("plan") || "premium";
-  const plan = planDetails[planParam] ?? planDetails.premium;
+  const plan = plans.find((p) => p.id === planParam) ?? plans[0];
 
   const [card, setCard] = useState({ number: "", name: "", expiry: "", cvc: "" });
 
@@ -62,10 +34,50 @@ const Payment = () => {
     return digits.length >= 3 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits;
   };
 
+  const isUpgrade = !!sessionStorage.getItem("arbeitly_upgrade_plan");
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isUpgrade && currentCustomer && plan) {
+      // Upgrade flow: existing candidate is paying to upgrade from free
+      updateCustomer(currentCustomer.id, {
+        planId: plan.id,
+        planName: plan.name,
+        planPrice: plan.totalLabel || plan.price,
+        planType: "paid",
+      });
+      sessionStorage.removeItem("arbeitly_upgrade_plan");
+      navigate("/onboarding");
+      return;
+    }
+
+    // New registration flow
+    try {
+      const stored = sessionStorage.getItem("arbeitly_register");
+      if (stored && plan) {
+        const { fullName, email, password } = JSON.parse(stored);
+        const pw = password || "";
+        const newCustomer = addCustomer({
+          fullName,
+          email,
+          password: pw,
+          planId: plan.id,
+          planName: plan.name,
+          planPrice: plan.totalLabel || plan.price,
+          planType: "paid",
+          status: "active",
+        });
+        loginDirect(newCustomer);
+      }
+    } catch {
+      // silent fail — still navigate to onboarding
+    }
+    sessionStorage.removeItem("arbeitly_register");
     navigate("/onboarding");
   };
+
+  if (!plan) return null;
 
   return (
     <div className="min-h-screen flex">
@@ -78,30 +90,37 @@ const Payment = () => {
           className="max-w-md w-full"
         >
           <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-6">
-            Step 2 of 3 — Payment
+            {isUpgrade ? "Upgrade — Payment" : "Step 2 of 3 — Payment"}
           </p>
           <h2 className="font-display text-3xl font-bold text-foreground mb-2">Order Summary</h2>
           <p className="text-muted-foreground mb-8">You're one step away from landing your dream job.</p>
 
           <div className="rounded-2xl border border-border bg-card/60 backdrop-blur p-6 mb-6">
             <div className="flex items-baseline justify-between mb-1">
-              <span className="font-display text-lg font-bold text-card-foreground">{plan.displayName} Plan</span>
+              <span className="font-display text-lg font-bold text-card-foreground">{plan.name} Plan</span>
               <span className="font-display text-2xl font-bold text-primary">{plan.price}</span>
             </div>
+            {plan.priceSuffix && (
+              <p className="text-xs font-semibold text-primary mb-1">{plan.priceSuffix}</p>
+            )}
             <p className="text-xs text-muted-foreground mb-4">{plan.billing}</p>
             <div className="border-t border-border pt-4">
               <ul className="space-y-2">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Check className="h-3.5 w-3.5 text-primary shrink-0" />
-                    {f}
+                  <li key={f.text} className="flex items-center gap-2 text-sm text-muted-foreground">
+                    {f.included ? (
+                      <Check className="h-3.5 w-3.5 text-primary shrink-0" />
+                    ) : null}
+                    {f.included && f.text}
                   </li>
                 ))}
               </ul>
             </div>
             <div className="border-t border-border mt-4 pt-4 flex justify-between items-center">
               <span className="text-sm font-medium text-card-foreground">Total today</span>
-              <span className="font-display text-sm font-bold text-card-foreground">{plan.totalLabel}</span>
+              <span className="font-display text-sm font-bold text-card-foreground">
+                {plan.totalLabel || plan.price}
+              </span>
             </div>
           </div>
 
@@ -135,37 +154,59 @@ const Payment = () => {
             <div>
               <Label htmlFor="cardNumber">Card Number</Label>
               <div className="relative mt-1.5">
-                <Input id="cardNumber" placeholder="1234 5678 9012 3456"
+                <Input
+                  id="cardNumber"
+                  placeholder="1234 5678 9012 3456"
                   value={card.number}
                   onChange={(e) => setCard({ ...card, number: formatCardNumber(e.target.value) })}
-                  className="pr-10" required />
+                  className="pr-10"
+                  required
+                />
                 <CreditCard className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               </div>
             </div>
             <div>
               <Label htmlFor="cardName">Name on Card</Label>
-              <Input id="cardName" placeholder="Max Müller" className="mt-1.5"
+              <Input
+                id="cardName"
+                placeholder="Max Müller"
+                className="mt-1.5"
                 value={card.name}
-                onChange={(e) => setCard({ ...card, name: e.target.value })} required />
+                onChange={(e) => setCard({ ...card, name: e.target.value })}
+                required
+              />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="expiry">Expiry Date</Label>
-                <Input id="expiry" placeholder="MM/YY" className="mt-1.5"
+                <Input
+                  id="expiry"
+                  placeholder="MM/YY"
+                  className="mt-1.5"
                   value={card.expiry}
-                  onChange={(e) => setCard({ ...card, expiry: formatExpiry(e.target.value) })} required />
+                  onChange={(e) => setCard({ ...card, expiry: formatExpiry(e.target.value) })}
+                  required
+                />
               </div>
               <div>
                 <Label htmlFor="cvc">CVC</Label>
-                <Input id="cvc" placeholder="123" maxLength={4} className="mt-1.5"
+                <Input
+                  id="cvc"
+                  placeholder="123"
+                  maxLength={4}
+                  className="mt-1.5"
                   value={card.cvc}
-                  onChange={(e) => setCard({ ...card, cvc: e.target.value.replace(/\D/g, "").slice(0, 4) })} required />
+                  onChange={(e) =>
+                    setCard({ ...card, cvc: e.target.value.replace(/\D/g, "").slice(0, 4) })
+                  }
+                  required
+                />
               </div>
             </div>
 
             <div className="lg:hidden rounded-xl border border-border bg-card p-4 text-sm">
               <div className="flex justify-between items-center">
-                <span className="text-card-foreground font-medium">{plan.displayName} Plan</span>
+                <span className="text-card-foreground font-medium">{plan.name} Plan</span>
                 <span className="font-bold text-primary">{plan.price}</span>
               </div>
             </div>
@@ -182,8 +223,8 @@ const Payment = () => {
             and <span className="text-primary cursor-pointer hover:underline">Privacy Policy</span>.
           </p>
           <p className="mt-2 text-center text-xs text-muted-foreground">
-            <Link to={`/register?plan=${planParam}`} className="text-primary hover:underline">
-              ← Back to account creation
+            <Link to={isUpgrade ? "/upgrade" : `/register?plan=${planParam}`} className="text-primary hover:underline">
+              {isUpgrade ? "← Back to plan selection" : "← Back to account creation"}
             </Link>
           </p>
         </motion.div>
